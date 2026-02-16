@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Datos - Plug & Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+    
+    <!-- Modal de Confirmación -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full animate-scale-in">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2" id="modal-title">¿Estás seguro?</h3>
+                <p class="text-gray-400" id="modal-message">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="cancelConfirmation()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-lg transition">
+                    Cancelar
+                </button>
+                <button id="modal-confirm-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-card p-4 mb-6 sticky top-0 z-50">
+        <h1 class="text-3xl font-bold text-cyan-400 neon-text text-center">⚡ Plug & Fix</h1>
+        <p class="text-center text-gray-400 text-sm">Base de Datos</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 max-w-4xl">
+        <!-- Marcas y Modelos -->
+        <div class="glass-card rounded-2xl p-6 mb-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6">📱 Marcas y Modelos</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-white mb-3">Agregar Marca</h3>
+                <input type="text" id="new-brand" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600 mb-2" placeholder="Nombre de la marca">
+                <button onclick="addBrand()" class="w-full btn-primary py-3 rounded-lg text-white font-bold">Agregar Marca</button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-white mb-3">Agregar Modelo</h3>
+                <input type="text" id="model-brand-select" list="model-brand-list" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600 mb-2" placeholder="Escribe o selecciona una marca..." autocomplete="off">
+                <datalist id="model-brand-list"></datalist>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="new-model-name" class="flex-1 bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Nombre del modelo">
+                    <select id="new-model-risk" class="bg-slate-700 text-white p-3 rounded-lg border border-slate-600">
+                        <option value="1.0">Gama Baja (1.0x)</option>
+                        <option value="1.2">Gama Media (1.2x)</option>
+                        <option value="1.5">Gama Alta (1.5x)</option>
+                        <option value="2.0">Premium (2.0x)</option>
+                    </select>
+                </div>
+                <button onclick="addModel()" class="w-full btn-primary py-3 rounded-lg text-white font-bold">Agregar Modelo</button>
+            </div>
+
+            <div id="brands-list" class="space-y-4"></div>
+        </div>
+
+        <!-- Servicios -->
+        <div class="glass-card rounded-2xl p-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6">🔧 Servicios</h2>
+            
+            <div class="mb-6">
+                <div class="space-y-2">
+                    <input type="text" id="new-service-name" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Nombre del servicio">
+                    <input type="number" step="0.5" id="new-service-hours" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Horas estimadas">
+                    <button onclick="addService()" class="w-full btn-primary py-3 rounded-lg text-white font-bold">Agregar Servicio</button>
+                </div>
+            </div>
+
+            <div id="services-list" class="space-y-3"></div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-slate-700">
+        <div class="flex justify-around">
+            <a href="index.html" class="tab-btn flex-1 py-3 text-center" data-tab="calculator">
+                <div class="text-xl mb-0.5">💰</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Calculadora</div>
+            </a>
+            <a href="database.html" class="tab-btn tab-active flex-1 py-3 text-center" data-tab="database">
+                <div class="text-xl mb-0.5">📱</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Base de Datos</div>
+            </a>
+            <a href="config.html" class="tab-btn flex-1 py-3 text-center" data-tab="config">
+                <div class="text-xl mb-0.5">⚙️</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Configuración</div>
+            </a>
+        </div>
+    </nav>
+
+    <script src="app.js"></script>
+    <script>
+        // Sistema de Modal de Confirmación
+        let confirmCallback = null;
+
+        function showConfirmation(title, message, onConfirm, confirmText = 'Eliminar') {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal-confirm-btn').textContent = confirmText;
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+            confirmCallback = onConfirm;
+        }
+
+        function cancelConfirmation() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            if (confirmCallback) {
+                confirmCallback();
+                cancelConfirmation();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmation-modal') {
+                cancelConfirmation();
+            }
+        });
+
+        // BASE DE DATOS
+        function renderDatabase() {
+            // Actualizar datalist de marcas para modelos
+            const modelBrandList = document.getElementById('model-brand-list');
+            modelBrandList.innerHTML = '';
+            appData.brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand.name;
+                option.dataset.id = brand.id;
+                modelBrandList.appendChild(option);
+            });
+
+            renderBrandsList();
+            renderServicesList();
+        }
+
+        function addBrand() {
+            const name = document.getElementById('new-brand').value.trim();
+            if (!name) {
+                showToast('Ingresa el nombre de la marca', 'error');
+                return;
+            }
+
+            const id = name.toLowerCase().replace(/\s+/g, '-');
+            if (appData.brands.find(b => b.id === id)) {
+                showToast('Esta marca ya existe', 'error');
+                return;
+            }
+
+            appData.brands.push({ id, name, models: [] });
+            saveData(appData);
+            document.getElementById('new-brand').value = '';
+            renderDatabase();
+            showToast('Marca agregada');
+        }
+
+        function addModel() {
+            const brandValue = document.getElementById('model-brand-select').value;
+            const name = document.getElementById('new-model-name').value.trim();
+            const riskFactor = parseFloat(document.getElementById('new-model-risk').value);
+
+            if (!brandValue || !name) {
+                showToast('Completa todos los campos', 'error');
+                return;
+            }
+
+            const brand = appData.brands.find(b => b.name === brandValue);
+            if (!brand) {
+                showToast('Marca no válida', 'error');
+                return;
+            }
+
+            const id = name.toLowerCase().replace(/\s+/g, '-');
+
+            if (brand.models.find(m => m.id === id)) {
+                showToast('Este modelo ya existe', 'error');
+                return;
+            }
+
+            brand.models.push({ id, name, riskFactor });
+            saveData(appData);
+            document.getElementById('new-model-name').value = '';
+            renderDatabase();
+            showToast('Modelo agregado');
+        }
+
+        function deleteBrand(brandId) {
+            const brand = appData.brands.find(b => b.id === brandId);
+            showConfirmation(
+                '¿Eliminar marca completa?',
+                `Se eliminará "${brand.name}" y todos sus modelos. Esta acción no se puede deshacer.`,
+                () => {
+                    appData.brands = appData.brands.filter(b => b.id !== brandId);
+                    saveData(appData);
+                    renderDatabase();
+                    showToast('Marca eliminada');
+                }
+            );
+        }
+
+        function deleteModel(brandId, modelId) {
+            const brand = appData.brands.find(b => b.id === brandId);
+            const model = brand.models.find(m => m.id === modelId);
+            showConfirmation(
+                '¿Eliminar modelo?',
+                `Se eliminará "${model.name}" de ${brand.name}.`,
+                () => {
+                    brand.models = brand.models.filter(m => m.id !== modelId);
+                    saveData(appData);
+                    renderDatabase();
+                    showToast('Modelo eliminado');
+                }
+            );
+        }
+
+        function renderBrandsList() {
+            const brandsList = document.getElementById('brands-list');
+            brandsList.innerHTML = appData.brands.map(brand => `
+                <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-white font-bold text-lg">${brand.name}</h4>
+                        <button onclick="deleteBrand('${brand.id}')" class="delete-btn-brand text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar marca completa">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        ${brand.models.map(model => `
+                            <div class="flex justify-between items-center bg-slate-800/50 rounded p-3">
+                                <div>
+                                    <span class="text-gray-300">${model.name}</span>
+                                    <span class="text-cyan-400 text-sm ml-2">(${model.riskFactor}x)</span>
+                                </div>
+                                <button onclick="deleteModel('${brand.id}', '${model.id}')" class="delete-btn-model text-gray-400 hover:text-red-400 hover:bg-gray-400/10 p-2 rounded transition" title="Eliminar modelo">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        `).join('')}
+                        ${brand.models.length === 0 ? '<p class="text-gray-500 text-sm">No hay modelos</p>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addService() {
+            const name = document.getElementById('new-service-name').value.trim();
+            const hours = parseFloat(document.getElementById('new-service-hours').value);
+
+            if (!name || !hours || hours <= 0) {
+                showToast('Completa todos los campos correctamente', 'error');
+                return;
+            }
+
+            const id = name.toLowerCase().replace(/\s+/g, '-');
+            if (appData.services.find(s => s.id === id)) {
+                showToast('Este servicio ya existe', 'error');
+                return;
+            }
+
+            appData.services.push({ id, name, hours });
+            saveData(appData);
+            document.getElementById('new-service-name').value = '';
+            document.getElementById('new-service-hours').value = '';
+            renderDatabase();
+            showToast('Servicio agregado');
+        }
+
+        function deleteService(serviceId) {
+            const service = appData.services.find(s => s.id === serviceId);
+            showConfirmation(
+                '¿Eliminar servicio?',
+                `Se eliminará "${service.name}" de la lista de servicios.`,
+                () => {
+                    appData.services = appData.services.filter(s => s.id !== serviceId);
+                    saveData(appData);
+                    renderDatabase();
+                    showToast('Servicio eliminado');
+                }
+            );
+        }
+
+        function renderServicesList() {
+            const servicesList = document.getElementById('services-list');
+            servicesList.innerHTML = appData.services.map(service => `
+                <div class="flex justify-between items-center bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                    <div>
+                        <p class="text-white font-medium">${service.name}</p>
+                        <p class="text-gray-400 text-sm">${service.hours} horas estimadas</p>
+                    </div>
+                    <button onclick="deleteService('${service.id}')" class="delete-btn text-red-400 hover:text-red-300 hover:bg-red-400/10 p-2 rounded-lg transition" title="Eliminar servicio">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveTab('database');
+            renderDatabase();
+        });
+    </script>
+</body>
+</html>

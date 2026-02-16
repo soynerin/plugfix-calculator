@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plug & Fix Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+    
+    <!-- Modal de Confirmación -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full animate-scale-in">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2" id="modal-title">¿Estás seguro?</h3>
+                <p class="text-gray-400" id="modal-message">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="cancelConfirmation()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-lg transition">
+                    Cancelar
+                </button>
+                <button id="modal-confirm-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-card p-4 mb-6 sticky top-0 z-50">
+        <h1 class="text-3xl font-bold text-cyan-400 neon-text text-center">⚡ Plug & Fix</h1>
+        <p class="text-center text-gray-400 text-sm">Calculadora de Precios</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 max-w-4xl">
+        <!-- Calculadora -->
+        <div class="glass-card rounded-2xl p-6 mb-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6">💰 Calculadora de Precio</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">Marca</label>
+                    <input type="text" id="calc-brand" list="brand-list" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Escribe o selecciona una marca..." autocomplete="off">
+                    <datalist id="brand-list"></datalist>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">Modelo</label>
+                    <input type="text" id="calc-model" list="model-list" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Primero selecciona una marca" autocomplete="off">
+                    <datalist id="model-list"></datalist>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">Tipo de Reparación</label>
+                    <input type="text" id="calc-service" list="service-list" class="w-full bg-slate-700 text-white p-3 rounded-lg border border-slate-600" placeholder="Escribe o selecciona un servicio..." autocomplete="off">
+                    <datalist id="service-list"></datalist>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">Costo Repuesto</label>
+                    <div class="input-group-wrapper flex items-stretch rounded-lg overflow-hidden border border-slate-600 bg-slate-700 transition-all">
+                        <input type="number" id="calc-cost" class="flex-1 bg-transparent text-white p-3 outline-none" placeholder="0" style="border: none;">
+                        <select id="calc-currency" class="bg-slate-600 text-white px-4 font-semibold cursor-pointer outline-none border-l border-slate-500" style="border-top: none; border-right: none; border-bottom: none;">
+                            <option value="ARS">ARS</option>
+                            <option value="USD">USD</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado -->
+            <div id="result-container" class="mt-8 hidden">
+                <div class="bg-slate-800 rounded-2xl p-8 text-center border-2 border-cyan-500/30 shadow-xl">
+                    <p class="text-gray-400 text-sm uppercase tracking-wider mb-3">Precio Sugerido al Público</p>
+                    <p class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-8" id="final-price">$0</p>
+                    <div class="grid grid-cols-2 gap-6 text-left bg-slate-900/50 rounded-xl p-6 border border-slate-700 mb-6">
+                        <div>
+                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Costo Repuesto</p>
+                            <p class="text-white font-bold text-2xl" id="cost-breakdown">$0</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Mano de Obra</p>
+                            <p class="text-white font-bold text-2xl" id="labor-breakdown">$0</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Ganancia Total</p>
+                            <p class="text-green-400 font-bold text-2xl" id="profit-breakdown">$0</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Margen %</p>
+                            <p class="text-green-400 font-bold text-2xl" id="margin-breakdown">0%</p>
+                        </div>
+                    </div>
+                    <button onclick="saveToHistory()" class="w-full btn-primary text-white font-bold py-3 rounded-lg text-lg">
+                        💾 Guardar en Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial -->
+        <div class="glass-card rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-cyan-400">📋 Historial Reciente</h3>
+                <button onclick="confirmClearHistory()" class="text-red-400 text-sm hover:text-red-300 px-3 py-2 hover:bg-red-400/10 rounded-lg transition">Limpiar</button>
+            </div>
+            <div id="history-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">No hay cálculos recientes</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-slate-700">
+        <div class="flex justify-around">
+            <a href="index.html" class="tab-btn tab-active flex-1 py-3 text-center" data-tab="calculator">
+                <div class="text-xl mb-0.5">💰</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Calculadora</div>
+            </a>
+            <a href="database.html" class="tab-btn flex-1 py-3 text-center" data-tab="database">
+                <div class="text-xl mb-0.5">📱</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Base de Datos</div>
+            </a>
+            <a href="config.html" class="tab-btn flex-1 py-3 text-center" data-tab="config">
+                <div class="text-xl mb-0.5">⚙️</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Configuración</div>
+            </a>
+        </div>
+    </nav>
+
+    <script src="app.js"></script>
+    <script>
+        // Sistema de Modal de Confirmación
+        let confirmCallback = null;
+
+        function showConfirmation(title, message, onConfirm, confirmText = 'Eliminar') {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal-confirm-btn').textContent = confirmText;
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+            confirmCallback = onConfirm;
+        }
+
+        function cancelConfirmation() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            if (confirmCallback) {
+                confirmCallback();
+                cancelConfirmation();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmation-modal') {
+                cancelConfirmation();
+            }
+        });
+
+        // CALCULADORA
+        let lastCalculation = null; // Guardar el último cálculo para el historial
+
+        function renderCalculator() {
+            // Cargar marcas
+            const brandList = document.getElementById('brand-list');
+            brandList.innerHTML = '';
+            appData.brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand.name;
+                option.dataset.id = brand.id;
+                brandList.appendChild(option);
+            });
+
+            // Cargar servicios
+            const serviceList = document.getElementById('service-list');
+            serviceList.innerHTML = '';
+            appData.services.forEach(service => {
+                const option = document.createElement('option');
+                option.value = service.name;
+                option.dataset.id = service.id;
+                option.dataset.hours = service.hours;
+                serviceList.appendChild(option);
+            });
+
+            renderHistory();
+            setupReactiveCalculation();
+        }
+
+        document.getElementById('calc-brand').addEventListener('input', function() {
+            const modelList = document.getElementById('model-list');
+            const modelInput = document.getElementById('calc-model');
+            modelList.innerHTML = '';
+            modelInput.value = '';
+            modelInput.placeholder = 'Escribe o selecciona un modelo...';
+            
+            const brand = appData.brands.find(b => b.name === this.value);
+            if (brand) {
+                brand.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.name;
+                    option.dataset.id = model.id;
+                    option.dataset.risk = model.riskFactor;
+                    modelList.appendChild(option);
+                });
+            }
+            calculatePrice(); // Recalcular cuando cambie la marca
+        });
+
+        function setupReactiveCalculation() {
+            // Agregar listeners a todos los campos
+            document.getElementById('calc-model').addEventListener('input', calculatePrice);
+            document.getElementById('calc-service').addEventListener('input', calculatePrice);
+            document.getElementById('calc-cost').addEventListener('input', calculatePrice);
+            document.getElementById('calc-currency').addEventListener('change', calculatePrice);
+        }
+
+        function calculatePrice() {
+            const brandValue = document.getElementById('calc-brand').value;
+            const modelValue = document.getElementById('calc-model').value;
+            const serviceValue = document.getElementById('calc-service').value;
+            const cost = parseFloat(document.getElementById('calc-cost').value) || 0;
+            const currency = document.getElementById('calc-currency').value;
+
+            // Si no están todos los campos completos, ocultar resultado
+            if (!brandValue || !modelValue || !serviceValue || cost === 0) {
+                document.getElementById('result-container').classList.add('hidden');
+                lastCalculation = null;
+                return;
+            }
+
+            // Buscar marca por nombre
+            const brand = appData.brands.find(b => b.name === brandValue);
+            if (!brand) {
+                document.getElementById('result-container').classList.add('hidden');
+                lastCalculation = null;
+                return;
+            }
+
+            // Buscar modelo por nombre
+            const model = brand.models.find(m => m.name === modelValue);
+            if (!model) {
+                document.getElementById('result-container').classList.add('hidden');
+                lastCalculation = null;
+                return;
+            }
+
+            // Buscar servicio por nombre
+            const service = appData.services.find(s => s.name === serviceValue);
+            if (!service) {
+                document.getElementById('result-container').classList.add('hidden');
+                lastCalculation = null;
+                return;
+            }
+            const config = appData.config;
+
+            // Convertir a ARS si es USD
+            const costARS = currency === 'USD' ? cost * config.usdRate : cost;
+
+            // Fórmula: (Costo * Margen) + (Horas * ValorHora * FactorRiesgo)
+            const marginMultiplier = 1 + (config.margin / 100);
+            const partCost = costARS * marginMultiplier;
+            const laborCost = service.hours * config.hourlyRate * model.riskFactor;
+            const finalPrice = partCost + laborCost;
+            const profit = finalPrice - costARS;
+            const profitMargin = ((profit / finalPrice) * 100).toFixed(1);
+
+            // Mostrar resultado
+            document.getElementById('result-container').classList.remove('hidden');
+            document.getElementById('final-price').textContent = `$${Math.round(finalPrice).toLocaleString('es-AR')}`;
+            document.getElementById('cost-breakdown').textContent = `$${Math.round(partCost).toLocaleString('es-AR')}`;
+            document.getElementById('labor-breakdown').textContent = `$${Math.round(laborCost).toLocaleString('es-AR')}`;
+            document.getElementById('profit-breakdown').textContent = `$${Math.round(profit).toLocaleString('es-AR')}`;
+            document.getElementById('margin-breakdown').textContent = `${profitMargin}%`;
+
+            // Guardar el cálculo actual para el historial
+            lastCalculation = {
+                date: new Date().toLocaleString('es-AR'),
+                brand: brand.name,
+                model: model.name,
+                service: service.name,
+                cost: costARS,
+                price: finalPrice,
+                profit: profit
+            };
+        }
+
+        function saveToHistory() {
+            if (!lastCalculation) {
+                showToast('No hay cálculo para guardar', 'error');
+                return;
+            }
+
+            // Agregar al historial
+            appData.history.unshift(lastCalculation);
+
+            if (appData.history.length > 20) {
+                appData.history = appData.history.slice(0, 20);
+            }
+
+            saveData(appData);
+            renderHistory();
+            showToast('¡Guardado en historial!');
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('history-list');
+            if (appData.history.length === 0) {
+                historyList.innerHTML = '<p class="text-gray-500 text-center py-4">No hay cálculos recientes</p>';
+                return;
+            }
+
+            historyList.innerHTML = appData.history.slice(0, 10).map(item => `
+                <div class="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="text-white font-medium">${item.brand} ${item.model}</p>
+                            <p class="text-gray-400 text-sm">${item.service}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-cyan-400 font-bold">$${Math.round(item.price).toLocaleString('es-AR')}</p>
+                            <p class="text-green-400 text-sm">+$${Math.round(item.profit).toLocaleString('es-AR')}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-500 text-xs">${item.date}</p>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            appData.history = [];
+            saveData(appData);
+            renderHistory();
+            showToast('Historial eliminado');
+        }
+
+        function confirmClearHistory() {
+            showConfirmation(
+                '¿Limpiar historial?',
+                'Se eliminará todo el historial de cálculos. Esta acción no se puede deshacer.',
+                clearHistory
+            );
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveTab('calculator');
+            renderCalculator();
+        });
+    </script>
+</body>
+</html>

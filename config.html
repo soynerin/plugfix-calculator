@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Plug & Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toast-container"></div>
+    
+    <!-- Modal de Confirmación -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full animate-scale-in">
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2" id="modal-title">¿Estás seguro?</h3>
+                <p class="text-gray-400" id="modal-message">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="cancelConfirmation()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-lg transition">
+                    Cancelar
+                </button>
+                <button id="modal-confirm-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
+                    Resetear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-card p-4 mb-6 sticky top-0 z-50">
+        <h1 class="text-3xl font-bold text-cyan-400 neon-text text-center">⚡ Plug & Fix</h1>
+        <p class="text-center text-gray-400 text-sm">Configuración</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 max-w-4xl">
+        <div class="glass-card rounded-2xl p-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6">⚙️ Configuración Financiera</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">💼 Valor Hora Técnica (ARS)</label>
+                    <input type="number" id="config-hourly-rate" class="w-full bg-slate-700 text-white p-4 rounded-lg border border-slate-600 text-lg" placeholder="13000">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">📈 Margen sobre Repuesto (%)</label>
+                    <input type="number" id="config-margin" class="w-full bg-slate-700 text-white p-4 rounded-lg border border-slate-600 text-lg" placeholder="40">
+                    <p class="text-gray-500 text-sm mt-1">Ej: 40% de ganancia sobre el costo</p>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 mb-2 font-medium">💵 Cotización Dólar (USD a ARS)</label>
+                    <input type="number" id="config-usd-rate" class="w-full bg-slate-700 text-white p-4 rounded-lg border border-slate-600 text-lg" placeholder="1200">
+                </div>
+
+                <button onclick="saveConfig()" class="w-full btn-primary text-white font-bold py-4 rounded-lg text-lg mt-4">
+                    💾 GUARDAR CONFIGURACIÓN
+                </button>
+
+                <div class="border-t border-slate-600 pt-6 mt-6">
+                    <h3 class="text-lg font-semibold text-red-400 mb-3">🗑️ Zona de Peligro</h3>
+                    <button onclick="confirmResetAll()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg">
+                        Resetear Toda la Aplicación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-slate-700">
+        <div class="flex justify-around">
+            <a href="index.html" class="tab-btn flex-1 py-3 text-center" data-tab="calculator">
+                <div class="text-xl mb-0.5">💰</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Calculadora</div>
+            </a>
+            <a href="database.html" class="tab-btn flex-1 py-3 text-center" data-tab="database">
+                <div class="text-xl mb-0.5">📱</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Base de Datos</div>
+            </a>
+            <a href="config.html" class="tab-btn tab-active flex-1 py-3 text-center" data-tab="config">
+                <div class="text-xl mb-0.5">⚙️</div>
+                <div class="text-[10px] text-gray-300 leading-tight">Configuración</div>
+            </a>
+        </div>
+    </nav>
+
+    <script src="app.js"></script>
+    <script>
+        // Sistema de Modal de Confirmación
+        let confirmCallback = null;
+
+        function showConfirmation(title, message, onConfirm, confirmText = 'Eliminar') {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal-confirm-btn').textContent = confirmText;
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+            confirmCallback = onConfirm;
+        }
+
+        function cancelConfirmation() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            if (confirmCallback) {
+                confirmCallback();
+                cancelConfirmation();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmation-modal') {
+                cancelConfirmation();
+            }
+        });
+
+        // CONFIGURACIÓN
+        function renderConfig() {
+            document.getElementById('config-hourly-rate').value = appData.config.hourlyRate;
+            document.getElementById('config-margin').value = appData.config.margin;
+            document.getElementById('config-usd-rate').value = appData.config.usdRate;
+        }
+
+        function saveConfig() {
+            appData.config.hourlyRate = parseFloat(document.getElementById('config-hourly-rate').value) || 13000;
+            appData.config.margin = parseFloat(document.getElementById('config-margin').value) || 40;
+            appData.config.usdRate = parseFloat(document.getElementById('config-usd-rate').value) || 1200;
+            saveData(appData);
+            showToast('Configuración guardada');
+        }
+
+        function resetAll() {
+            localStorage.removeItem('plugfixData');
+            appData = loadData();
+            window.location.href = 'index.html';
+            showToast('Aplicación reseteada');
+        }
+
+        function confirmResetAll() {
+            showConfirmation(
+                '⚠️ ¿Resetear TODO?',
+                'Se borrarán TODOS los datos: marcas, modelos, servicios, configuración e historial. Esta acción es IRREVERSIBLE.',
+                resetAll,
+                'Sí, resetear todo'
+            );
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveTab('config');
+            renderConfig();
+        });
+    </script>
+</body>
+</html>
