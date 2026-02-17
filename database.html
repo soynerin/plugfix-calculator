@@ -73,21 +73,38 @@
                 <button onclick="addModel()" class="w-full btn-primary py-3 rounded-lg text-white font-bold">Agregar Modelo</button>
             </div>
 
-            <!-- Barra de Búsqueda -->
-            <div class="relative mb-4">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
+            <!-- Barra de Herramientas -->
+            <div class="flex gap-3 mb-4">
+                <!-- Input de Búsqueda (70%) -->
+                <div class="relative flex-[7]">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="search-brands" 
+                        class="w-full bg-slate-700 text-white pl-10 pr-4 py-3 rounded-lg border border-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition" 
+                        placeholder="Buscar marca o modelo..."
+                        oninput="handleSearchAndSort()"
+                        autocomplete="off"
+                    >
                 </div>
-                <input 
-                    type="text" 
-                    id="search-brands" 
-                    class="w-full bg-slate-700 text-white pl-10 pr-4 py-3 rounded-lg border border-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition" 
-                    placeholder="Buscar marca o modelo..."
-                    oninput="searchBrands(this.value)"
-                    autocomplete="off"
-                >
+                
+                <!-- Dropdown de Ordenamiento (30%) -->
+                <div class="flex-[3]">
+                    <select 
+                        id="sort-brands" 
+                        class="w-full bg-slate-700 text-white px-4 py-3 rounded-lg border border-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition cursor-pointer"
+                        onchange="handleSearchAndSort()"
+                    >
+                        <option value="name-asc">Nombre (A-Z)</option>
+                        <option value="name-desc">Nombre (Z-A)</option>
+                        <option value="complexity-desc">Mayor Complejidad</option>
+                        <option value="complexity-asc">Menor Complejidad</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Acordeón de Marcas y Modelos -->
@@ -134,11 +151,16 @@
     </nav>
 
     <script src="app.js"></script>
-    <script>
+    <script type="module">
+        import { useDB, initializeDB } from './database/databaseProvider.js';
+        
+        // Instancia de la base de datos
+        let db;
+        
         // Sistema de Modal de Confirmación
         let confirmCallback = null;
 
-        function showConfirmation(title, message, onConfirm, confirmText = 'Eliminar') {
+        window.showConfirmation = function(title, message, onConfirm, confirmText = 'Eliminar') {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-message').textContent = message;
             document.getElementById('modal-confirm-btn').textContent = confirmText;
@@ -146,7 +168,7 @@
             confirmCallback = onConfirm;
         }
 
-        function cancelConfirmation() {
+        window.cancelConfirmation = function() {
             document.getElementById('confirmation-modal').classList.add('hidden');
             confirmCallback = null;
         }
@@ -165,43 +187,58 @@
             }
         });
 
-        // BASE DE DATOS
-        function renderDatabase() {
-            // Actualizar datalist de marcas para modelos
-            const modelBrandList = document.getElementById('model-brand-list');
-            modelBrandList.innerHTML = '';
-            appData.brands.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand.name;
-                option.dataset.id = brand.id;
-                modelBrandList.appendChild(option);
-            });
-
-            renderBrandsList();
-            renderServicesList();
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast glass-card rounded-lg p-4 ${type === 'success' ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`;
+            toast.innerHTML = `<p class="text-white font-medium">${message}</p>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
 
-        function addBrand() {
+        // BASE DE DATOS
+        async function renderDatabase() {
+            try {
+                // Obtener todas las marcas
+                const brands = await db.getAllBrands();
+                
+                // Actualizar datalist de marcas para modelos
+                const modelBrandList = document.getElementById('model-brand-list');
+                modelBrandList.innerHTML = '';
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand.name;
+                    option.dataset.id = brand.id;
+                    modelBrandList.appendChild(option);
+                });
+
+                await renderBrandsList();
+                await renderServicesList();
+            } catch (error) {
+                console.error('Error al renderizar base de datos:', error);
+                showToast('Error al cargar datos', 'error');
+            }
+        }
+
+        window.addBrand = async function() {
             const name = document.getElementById('new-brand').value.trim();
             if (!name) {
                 showToast('Ingresa el nombre de la marca', 'error');
                 return;
             }
 
-            const id = name.toLowerCase().replace(/\s+/g, '-');
-            if (appData.brands.find(b => b.id === id)) {
-                showToast('Esta marca ya existe', 'error');
-                return;
+            try {
+                await db.addBrand({ name });
+                document.getElementById('new-brand').value = '';
+                await renderDatabase();
+                showToast('Marca agregada');
+            } catch (error) {
+                console.error('Error al agregar marca:', error);
+                showToast('Error al agregar marca', 'error');
             }
-
-            appData.brands.push({ id, name, models: [] });
-            saveData(appData);
-            document.getElementById('new-brand').value = '';
-            renderDatabase();
-            showToast('Marca agregada');
         }
 
-        function addModel() {
+        window.addModel = async function() {
             const brandValue = document.getElementById('model-brand-select').value;
             const name = document.getElementById('new-model-name').value.trim();
             const riskFactor = parseFloat(document.getElementById('new-model-risk').value);
@@ -211,139 +248,226 @@
                 return;
             }
 
-            const brand = appData.brands.find(b => b.name === brandValue);
-            if (!brand) {
-                showToast('Marca no válida', 'error');
-                return;
-            }
-
-            const id = name.toLowerCase().replace(/\s+/g, '-');
-
-            if (brand.models.find(m => m.id === id)) {
-                showToast('Este modelo ya existe', 'error');
-                return;
-            }
-
-            brand.models.push({ id, name, riskFactor });
-            saveData(appData);
-            document.getElementById('new-model-name').value = '';
-            renderDatabase();
-            showToast('Modelo agregado');
-        }
-
-        function deleteBrand(brandId) {
-            const brand = appData.brands.find(b => b.id === brandId);
-            showConfirmation(
-                '¿Eliminar marca completa?',
-                `Se eliminará "${brand.name}" y todos sus modelos. Esta acción no se puede deshacer.`,
-                () => {
-                    appData.brands = appData.brands.filter(b => b.id !== brandId);
-                    saveData(appData);
-                    renderDatabase();
-                    showToast('Marca eliminada');
+            try {
+                // Buscar la marca por nombre
+                const brands = await db.getAllBrands();
+                const brand = brands.find(b => b.name === brandValue);
+                
+                if (!brand) {
+                    showToast('Marca no válida', 'error');
+                    return;
                 }
-            );
-        }
 
-        function deleteModel(brandId, modelId) {
-            const brand = appData.brands.find(b => b.id === brandId);
-            const model = brand.models.find(m => m.id === modelId);
-            showConfirmation(
-                '¿Eliminar modelo?',
-                `Se eliminará "${model.name}" de ${brand.name}.`,
-                () => {
-                    brand.models = brand.models.filter(m => m.id !== modelId);
-                    saveData(appData);
-                    renderDatabase();
-                    showToast('Modelo eliminado');
+                // Verificar si el modelo ya existe
+                const existingModels = await db.getModelsByBrand(brand.id);
+                const modelId = name.toLowerCase().replace(/\s+/g, '-');
+                
+                if (existingModels.find(m => m.id === modelId)) {
+                    showToast('Este modelo ya existe', 'error');
+                    return;
                 }
-            );
+
+                await db.addModel({ name, brandId: brand.id, riskFactor });
+                document.getElementById('new-model-name').value = '';
+                await renderDatabase();
+                showToast('Modelo agregado');
+            } catch (error) {
+                console.error('Error al agregar modelo:', error);
+                showToast('Error al agregar modelo', 'error');
+            }
         }
 
-        function renderBrandsList() {
+        window.deleteBrand = async function(brandId) {
+            try {
+                const brand = await db.getBrandById(brandId);
+                if (!brand) return;
+                
+                showConfirmation(
+                    '¿Eliminar marca completa?',
+                    `Se eliminará "${brand.name}" y todos sus modelos. Esta acción no se puede deshacer.`,
+                    async () => {
+                        try {
+                            await db.deleteBrand(brandId);
+                            await renderDatabase();
+                            showToast('Marca eliminada');
+                        } catch (error) {
+                            console.error('Error al eliminar marca:', error);
+                            showToast('Error al eliminar marca', 'error');
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        window.deleteModel = async function(brandId, modelId) {
+            try {
+                const brand = await db.getBrandById(brandId);
+                const model = await db.getModelById(modelId);
+                
+                if (!brand || !model) return;
+                
+                showConfirmation(
+                    '¿Eliminar modelo?',
+                    `Se eliminará "${model.name}" de ${brand.name}.`,
+                    async () => {
+                        try {
+                            await db.deleteModel(modelId);
+                            await renderDatabase();
+                            showToast('Modelo eliminado');
+                        } catch (error) {
+                            console.error('Error al eliminar modelo:', error);
+                            showToast('Error al eliminar modelo', 'error');
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function renderBrandsList(searchTerm = '', sortOption = 'name-asc') {
             const brandsList = document.getElementById('brands-list');
             
-            if (appData.brands.length === 0) {
-                brandsList.innerHTML = '<p class="text-gray-500 text-center py-8">No hay marcas registradas</p>';
-                return;
-            }
-            
-            brandsList.innerHTML = appData.brands.map((brand, index) => {
-                const accordionId = `accordion-${brand.id}`;
+            try {
+                const brands = await db.getAllBrands();
                 
-                return `
-                    <div class="bg-slate-700/50 rounded-lg border border-slate-600 overflow-hidden" data-brand-id="${brand.id}">
-                        <!-- Cabecera del Acordeón -->
-                        <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70 transition" onclick="toggleAccordion('${accordionId}')">
-                            <div class="flex items-center gap-3 flex-1">
-                                <svg id="icon-${accordionId}" class="w-5 h-5 text-cyan-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                                <h4 class="text-white font-bold text-lg">${brand.name}</h4>
-                                <span class="inline-block bg-cyan-500/20 text-cyan-400 rounded-full px-3 py-1 text-xs font-semibold">
-                                    ${brand.models.length} ${brand.models.length === 1 ? 'Modelo' : 'Modelos'}
-                                </span>
-                            </div>
-                            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-                                <button onclick="deleteBrand('${brand.id}')" class="delete-btn-brand text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar marca completa">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
+                if (brands.length === 0) {
+                    brandsList.innerHTML = '<p class="text-gray-500 text-center py-8">No hay marcas registradas</p>';
+                    return;
+                }
+                
+                // Obtener modelos para cada marca
+                let brandsWithModels = await Promise.all(
+                    brands.map(async (brand) => {
+                        let models = await db.getModelsByBrand(brand.id);
                         
-                        <!-- Contenido Expandible -->
-                        <div id="${accordionId}" class="accordion-content max-h-0 overflow-hidden transition-all duration-300">
-                            <div class="p-4 pt-0 border-t border-slate-600">
-                                ${brand.models.length > 0 ? `
-                                    <div class="models-grid">
-                                        ${brand.models.map(model => {
-                                            // Determinar color y texto del badge según el factor de riesgo
-                                            let badgeClass = '';
-                                            let badgeText = '';
-                                            
-                                            if (model.riskFactor <= 1.0) {
-                                                badgeClass = 'badge-low';
-                                                badgeText = 'Gama Baja';
-                                            } else if (model.riskFactor <= 1.2) {
-                                                badgeClass = 'badge-medium';
-                                                badgeText = 'Gama Media';
-                                            } else if (model.riskFactor <= 1.5) {
-                                                badgeClass = 'badge-high';
-                                                badgeText = 'Gama Alta';
-                                            } else {
-                                                badgeClass = 'badge-premium';
-                                                badgeText = 'Premium';
-                                            }
-                                            
-                                            return `
-                                                <div class="model-mini-card">
-                                                    <button onclick="deleteModel('${brand.id}', '${model.id}')" class="model-delete-btn" title="Eliminar modelo">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                        </svg>
-                                                    </button>
-                                                    <div class="model-content">
-                                                        <h5 class="model-name">${model.name}</h5>
-                                                        <div class="flex items-center gap-2 mt-2">
-                                                            <span class="model-badge ${badgeClass}">${badgeText}</span>
-                                                            <span class="text-gray-500 text-xs font-mono">${model.riskFactor}x</span>
+                        // Aplicar ordenamiento a los modelos
+                        models = sortModels(models, sortOption);
+                        
+                        return { ...brand, models };
+                    })
+                );
+                
+                // Filtrar marcas y modelos según búsqueda
+                const searchLower = searchTerm.toLowerCase().trim();
+                let filteredBrands = brandsWithModels;
+                
+                if (searchLower) {
+                    filteredBrands = brandsWithModels.map(brand => {
+                        // Filtrar modelos que coincidan con la búsqueda
+                        const matchingModels = brand.models.filter(model => 
+                            model.name.toLowerCase().includes(searchLower)
+                        );
+                        
+                        // Solo incluir la marca si tiene modelos coincidentes o si el nombre de la marca coincide
+                        if (matchingModels.length > 0 || brand.name.toLowerCase().includes(searchLower)) {
+                            return { ...brand, models: matchingModels.length > 0 ? matchingModels : brand.models };
+                        }
+                        return null;
+                    }).filter(brand => brand !== null);
+                }
+                
+                // Mostrar estado vacío si no hay resultados
+                if (filteredBrands.length === 0) {
+                    brandsList.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-700/50 rounded-full mb-4">
+                                <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-gray-400 text-lg font-medium">No se encontraron modelos con ese nombre</p>
+                            <p class="text-gray-500 text-sm mt-2">Intenta con otro término de búsqueda</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Auto-expandir: si hay búsqueda activa, todos los acordeones deben abrirse
+                const shouldExpand = searchLower !== '';
+                
+                brandsList.innerHTML = filteredBrands.map((brand, index) => {
+                    const accordionId = `accordion-${brand.id}`;
+                    
+                    return `
+                        <div class="bg-slate-700/50 rounded-lg border border-slate-600 overflow-hidden" data-brand-id="${brand.id}">
+                            <!-- Cabecera del Acordeón -->
+                            <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70 transition" onclick="toggleAccordion('${accordionId}')">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <svg id="icon-${accordionId}" class="w-5 h-5 text-cyan-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="${shouldExpand ? 'transform: rotate(90deg);' : ''}">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                    <h4 class="text-white font-bold text-lg">${brand.name}</h4>
+                                    <span class="inline-block bg-cyan-500/20 text-cyan-400 rounded-full px-3 py-1 text-xs font-semibold">
+                                        ${brand.models.length} ${brand.models.length === 1 ? 'Modelo' : 'Modelos'}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                                    <button onclick="deleteBrand('${brand.id}')" class="delete-btn-brand text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar marca completa">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Contenido Expandible -->
+                            <div id="${accordionId}" class="accordion-content ${shouldExpand ? '' : 'max-h-0'} overflow-hidden transition-all duration-300" style="${shouldExpand ? 'max-height: 2000px;' : 'max-height: 0;'}">
+                                <div class="p-4 pt-0 border-t border-slate-600">
+                                    ${brand.models.length > 0 ? `
+                                        <div class="models-grid">
+                                            ${brand.models.map(model => {
+                                                // Determinar color y texto del badge según el factor de riesgo
+                                                let badgeClass = '';
+                                                let badgeText = '';
+                                                
+                                                if (model.riskFactor <= 1.0) {
+                                                    badgeClass = 'badge-low';
+                                                    badgeText = 'Gama Baja';
+                                                } else if (model.riskFactor <= 1.2) {
+                                                    badgeClass = 'badge-medium';
+                                                    badgeText = 'Gama Media';
+                                                } else if (model.riskFactor <= 1.5) {
+                                                    badgeClass = 'badge-high';
+                                                    badgeText = 'Gama Alta';
+                                                } else {
+                                                    badgeClass = 'badge-premium';
+                                                    badgeText = 'Premium';
+                                                }
+                                                
+                                                return `
+                                                    <div class="model-mini-card">
+                                                        <button onclick="deleteModel('${brand.id}', '${model.id}')" class="model-delete-btn" title="Eliminar modelo">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div class="model-content">
+                                                            <h5 class="model-name">${model.name}</h5>
+                                                            <div class="flex items-center gap-2 mt-2">
+                                                                <span class="model-badge ${badgeClass}">${badgeText}</span>
+                                                                <span class="text-gray-500 text-xs font-mono">${model.riskFactor}x</span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                ` : '<p class="text-gray-500 text-sm text-center mt-3">No hay modelos en esta marca</p>'}
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    ` : '<p class="text-gray-500 text-sm text-center mt-3">No hay modelos en esta marca</p>'}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error al renderizar marcas:', error);
+                brandsList.innerHTML = '<p class="text-red-500 text-center py-8">Error al cargar las marcas</p>';
+            }
         }
         
-        function toggleAccordion(accordionId) {
+        window.toggleAccordion = function(accordionId) {
             const content = document.getElementById(accordionId);
             const icon = document.getElementById(`icon-${accordionId}`);
             
@@ -358,62 +482,41 @@
             }
         }
 
-        // Búsqueda en tiempo real
+        // Función de ordenamiento de modelos
+        function sortModels(models, sortOption) {
+            const sorted = [...models];
+            
+            switch(sortOption) {
+                case 'name-asc':
+                    return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                
+                case 'name-desc':
+                    return sorted.sort((a, b) => b.name.localeCompare(a.name));
+                
+                case 'complexity-desc': // Mayor complejidad (Premium primero)
+                    return sorted.sort((a, b) => b.riskFactor - a.riskFactor);
+                
+                case 'complexity-asc': // Menor complejidad (Económico primero)
+                    return sorted.sort((a, b) => a.riskFactor - b.riskFactor);
+                
+                default:
+                    return sorted;
+            }
+        }
+        
+        // Sistema de búsqueda y ordenamiento reactivo
         let searchTimeout;
-        function searchBrands(query) {
+        window.handleSearchAndSort = function() {
             clearTimeout(searchTimeout);
             
-            searchTimeout = setTimeout(() => {
-                const searchTerm = query.toLowerCase().trim();
-                
-                appData.brands.forEach(brand => {
-                    const brandElement = document.querySelector(`[data-brand-id="${brand.id}"]`);
-                    if (!brandElement) return;
-                    
-                    const accordionId = `accordion-${brand.id}`;
-                    const accordionContent = document.getElementById(accordionId);
-                    const accordionIcon = document.getElementById(`icon-${accordionId}`);
-                    
-                    // Buscar coincidencias en marca o modelos
-                    const brandMatches = brand.name.toLowerCase().includes(searchTerm);
-                    const matchingModels = brand.models.filter(model => 
-                        model.name.toLowerCase().includes(searchTerm)
-                    );
-                    
-                    if (!searchTerm) {
-                        // Sin búsqueda: mostrar todo y colapsar
-                        brandElement.style.display = '';
-                        accordionContent.style.maxHeight = '0px';
-                        accordionIcon.style.transform = 'rotate(0deg)';
-                        
-                        // Quitar resaltado
-                        brandElement.querySelectorAll('.model-mini-card').forEach(card => {
-                            card.classList.remove('highlight-match');
-                        });
-                    } else if (brandMatches || matchingModels.length > 0) {
-                        // Hay coincidencias: mostrar y expandir
-                        brandElement.style.display = '';
-                        accordionContent.style.maxHeight = accordionContent.scrollHeight + 'px';
-                        accordionIcon.style.transform = 'rotate(90deg)';
-                        
-                        // Resaltar modelos coincidentes
-                        brandElement.querySelectorAll('.model-mini-card').forEach(card => {
-                            const modelName = card.querySelector('.model-name').textContent;
-                            if (modelName.toLowerCase().includes(searchTerm)) {
-                                card.classList.add('highlight-match');
-                            } else {
-                                card.classList.remove('highlight-match');
-                            }
-                        });
-                    } else {
-                        // Sin coincidencias: ocultar
-                        brandElement.style.display = 'none';
-                    }
-                });
+            searchTimeout = setTimeout(async () => {
+                const searchTerm = document.getElementById('search-brands').value;
+                const sortOption = document.getElementById('sort-brands').value;
+                await renderBrandsList(searchTerm, sortOption);
             }, 200); // Debounce de 200ms
         }
 
-        function addService() {
+        window.addService = async function() {
             const name = document.getElementById('new-service-name').value.trim();
             const hours = parseFloat(document.getElementById('new-service-hours').value);
 
@@ -422,64 +525,95 @@
                 return;
             }
 
-            const id = name.toLowerCase().replace(/\s+/g, '-');
-            if (appData.services.find(s => s.id === id)) {
-                showToast('Este servicio ya existe', 'error');
-                return;
+            try {
+                await db.addService({ name, hours });
+                document.getElementById('new-service-name').value = '';
+                document.getElementById('new-service-hours').value = '';
+                await renderDatabase();
+                showToast('Servicio agregado');
+            } catch (error) {
+                console.error('Error al agregar servicio:', error);
+                showToast('Error al agregar servicio', 'error');
             }
-
-            appData.services.push({ id, name, hours });
-            saveData(appData);
-            document.getElementById('new-service-name').value = '';
-            document.getElementById('new-service-hours').value = '';
-            renderDatabase();
-            showToast('Servicio agregado');
         }
 
-        function deleteService(serviceId) {
-            const service = appData.services.find(s => s.id === serviceId);
-            showConfirmation(
-                '¿Eliminar servicio?',
-                `Se eliminará "${service.name}" de la lista de servicios.`,
-                () => {
-                    appData.services = appData.services.filter(s => s.id !== serviceId);
-                    saveData(appData);
-                    renderDatabase();
-                    showToast('Servicio eliminado');
-                }
-            );
+        window.deleteService = async function(serviceId) {
+            try {
+                const service = await db.getServiceById(serviceId);
+                if (!service) return;
+                
+                showConfirmation(
+                    '¿Eliminar servicio?',
+                    `Se eliminará "${service.name}" de la lista de servicios.`,
+                    async () => {
+                        try {
+                            await db.deleteService(serviceId);
+                            await renderDatabase();
+                            showToast('Servicio eliminado');
+                        } catch (error) {
+                            console.error('Error al eliminar servicio:', error);
+                            showToast('Error al eliminar servicio', 'error');
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('Error:', error);
+            }
         }
 
-        function renderServicesList() {
+        async function renderServicesList() {
             const servicesList = document.getElementById('services-list');
             
-            if (appData.services.length === 0) {
-                servicesList.innerHTML = '<div class="text-gray-500 text-center py-8 col-span-2">No hay servicios registrados</div>';
-                return;
-            }
-            
-            servicesList.innerHTML = appData.services.map(service => `
-                <div class="service-mini-card">
-                    <button onclick="deleteService('${service.id}')" class="service-delete-btn" title="Eliminar servicio">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                    </button>
-                    <div class="flex items-center justify-between gap-4">
-                        <h3 class="service-name">${service.name}</h3>
-                        <div class="service-hours-badge">
-                            <div class="hours-number">${service.hours}</div>
-                            <div class="hours-label">horas</div>
+            try {
+                const services = await db.getAllServices();
+                
+                if (services.length === 0) {
+                    servicesList.innerHTML = '<div class="text-gray-500 text-center py-8 col-span-2">No hay servicios registrados</div>';
+                    return;
+                }
+                
+                servicesList.innerHTML = services.map(service => `
+                    <div class="service-mini-card">
+                        <button onclick="deleteService('${service.id}')" class="service-delete-btn" title="Eliminar servicio">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                        <div class="flex items-center justify-between gap-4">
+                            <h3 class="service-name">${service.name}</h3>
+                            <div class="service-hours-badge">
+                                <div class="hours-number">${service.hours}</div>
+                                <div class="hours-label">horas</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            } catch (error) {
+                console.error('Error al renderizar servicios:', error);
+                servicesList.innerHTML = '<div class="text-red-500 text-center py-8 col-span-2">Error al cargar servicios</div>';
+            }
         }
 
         // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
-            setActiveTab('database');
-            renderDatabase();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inicializar la base de datos
+                await initializeDB();
+                db = useDB();
+                
+                // Set active tab (función de app.js)
+                if (typeof setActiveTab === 'function') {
+                    setActiveTab('database');
+                }
+                
+                // Renderizar datos
+                await renderDatabase();
+                
+                console.log('✅ Base de datos inicializada correctamente');
+            } catch (error) {
+                console.error('❌ Error al inicializar:', error);
+                showToast('Error al inicializar la base de datos', 'error');
+            }
         });
     </script>
 </body>

@@ -78,12 +78,70 @@ class LocalDBService extends IDatabaseService {
             { id: appleId, name: 'Apple' }
         ]);
 
-        await this.models.bulkAdd([
+        // Limpiar modelos Apple existentes para evitar duplicados
+        await this.models.where('brandId').equals(appleId).delete();
+
+        // Modelos Samsung
+        const samsungModels = [
             { id: 'a14', brandId: samsungId, name: 'Galaxy A14', riskFactor: 1.0 },
-            { id: 's23', brandId: samsungId, name: 'Galaxy S23', riskFactor: 1.5 },
-            { id: 'iphone11', brandId: appleId, name: 'iPhone 11', riskFactor: 1.5 },
-            { id: 'iphone14', brandId: appleId, name: 'iPhone 14', riskFactor: 2.0 }
-        ]);
+            { id: 's23', brandId: samsungId, name: 'Galaxy S23', riskFactor: 1.5 }
+        ];
+
+        // Modelos iPhone - LISTADO COMPLETO (Histórico hasta Feb 2026)
+        const iPhoneModels = [
+            // --- ERA TOUCH ID & PRIMEROS FACE ID (Gama Media-Baja) [1.0x - 1.2x] ---
+            { id: 'iphone7', brandId: appleId, name: 'iPhone 7', category: 'Gama Baja', riskFactor: 1.0 },
+            { id: 'iphone7plus', brandId: appleId, name: 'iPhone 7 Plus', category: 'Gama Baja', riskFactor: 1.1 },
+            { id: 'iphone8', brandId: appleId, name: 'iPhone 8', category: 'Gama Baja', riskFactor: 1.1 },
+            { id: 'iphone8plus', brandId: appleId, name: 'iPhone 8 Plus', category: 'Gama Baja', riskFactor: 1.1 },
+            { id: 'iphonex', brandId: appleId, name: 'iPhone X', category: 'Gama Media', riskFactor: 1.2 },
+            { id: 'iphonexs', brandId: appleId, name: 'iPhone XS', category: 'Gama Media', riskFactor: 1.2 },
+            { id: 'iphonexsmax', brandId: appleId, name: 'iPhone XS Max', category: 'Gama Media', riskFactor: 1.2 },
+            { id: 'iphonexr', brandId: appleId, name: 'iPhone XR', category: 'Gama Media', riskFactor: 1.2 },
+            { id: 'iphone11', brandId: appleId, name: 'iPhone 11', category: 'Gama Media', riskFactor: 1.2 },
+            { id: 'iphone11pro', brandId: appleId, name: 'iPhone 11 Pro', category: 'Gama Media', riskFactor: 1.25 },
+            { id: 'iphone11promax', brandId: appleId, name: 'iPhone 11 Pro Max', category: 'Gama Media', riskFactor: 1.25 },
+            { id: 'iphonese2', brandId: appleId, name: 'iPhone SE (2ª Gen - 2020)', category: 'Gama Baja', riskFactor: 1.0 },
+            { id: 'iphonese3', brandId: appleId, name: 'iPhone SE (3ª Gen - 2022)', category: 'Gama Baja', riskFactor: 1.1 },
+            
+            // --- ERA OLED MODERNA (Gama Alta Estándar) [1.4x - 1.6x] ---
+            { id: 'iphone12mini', brandId: appleId, name: 'iPhone 12 mini', category: 'Gama Alta', riskFactor: 1.4 },
+            { id: 'iphone12', brandId: appleId, name: 'iPhone 12', category: 'Gama Alta', riskFactor: 1.4 },
+            { id: 'iphone12pro', brandId: appleId, name: 'iPhone 12 Pro', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone12promax', brandId: appleId, name: 'iPhone 12 Pro Max', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone13mini', brandId: appleId, name: 'iPhone 13 mini', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone13', brandId: appleId, name: 'iPhone 13', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone13pro', brandId: appleId, name: 'iPhone 13 Pro', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 'iphone13promax', brandId: appleId, name: 'iPhone 13 Pro Max', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 'iphone14', brandId: appleId, name: 'iPhone 14', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone14plus', brandId: appleId, name: 'iPhone 14 Plus', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 'iphone14pro', brandId: appleId, name: 'iPhone 14 Pro', category: 'Gama Alta', riskFactor: 1.7 },
+            { id: 'iphone14promax', brandId: appleId, name: 'iPhone 14 Pro Max', category: 'Gama Alta', riskFactor: 1.7 },
+            { id: 'iphone15', brandId: appleId, name: 'iPhone 15', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 'iphone15plus', brandId: appleId, name: 'iPhone 15 Plus', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 'iphone15pro', brandId: appleId, name: 'iPhone 15 Pro', category: 'Gama Alta', riskFactor: 1.8 },
+            { id: 'iphone15promax', brandId: appleId, name: 'iPhone 15 Pro Max', category: 'Gama Alta', riskFactor: 1.8 },
+            
+            // --- ÚLTIMAS GENERACIONES (Gama Premium / Actual) [1.8x - 2.2x] ---
+            // Serie 16 (2024)
+            { id: 'iphone16', brandId: appleId, name: 'iPhone 16', category: 'Premium', riskFactor: 1.8 },
+            { id: 'iphone16plus', brandId: appleId, name: 'iPhone 16 Plus', category: 'Premium', riskFactor: 1.8 },
+            { id: 'iphone16pro', brandId: appleId, name: 'iPhone 16 Pro', category: 'Premium', riskFactor: 2.0 },
+            { id: 'iphone16promax', brandId: appleId, name: 'iPhone 16 Pro Max', category: 'Premium', riskFactor: 2.0 },
+            
+            // Serie SE 4 / Modelos 2025
+            { id: 'iphonese4', brandId: appleId, name: 'iPhone SE (4ª Gen)', category: 'Gama Media', riskFactor: 1.5 },
+            { id: 'iphone16e', brandId: appleId, name: 'iPhone 16e', category: 'Gama Media', riskFactor: 1.6 },
+            
+            // Serie 17 (Flagship Actual 2025-2026)
+            { id: 'iphone17', brandId: appleId, name: 'iPhone 17', category: 'Premium', riskFactor: 2.0 },
+            { id: 'iphone17air', brandId: appleId, name: 'iPhone 17 Air', category: 'Premium', riskFactor: 2.0 },
+            { id: 'iphone17pro', brandId: appleId, name: 'iPhone 17 Pro', category: 'Premium', riskFactor: 2.2 },
+            { id: 'iphone17promax', brandId: appleId, name: 'iPhone 17 Pro Max', category: 'Premium', riskFactor: 2.2 }
+        ];
+
+        // Insertar todos los modelos
+        await this.models.bulkAdd([...samsungModels, ...iPhoneModels]);
 
         // Servicios por defecto
         await this.services.bulkAdd([
