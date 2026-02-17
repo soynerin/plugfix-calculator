@@ -100,11 +100,16 @@
     </nav>
 
     <script src="app.js"></script>
-    <script>
+    <script type="module">
+        import { useDB, initializeDB } from './database/databaseProvider.js';
+        
+        // Instancia de la base de datos
+        let db;
+        
         // Sistema de Modal de Confirmación
         let confirmCallback = null;
 
-        function showConfirmation(title, message, onConfirm, confirmText = 'Eliminar') {
+        window.showConfirmation = function(title, message, onConfirm, confirmText = 'Eliminar') {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-message').textContent = message;
             document.getElementById('modal-confirm-btn').textContent = confirmText;
@@ -112,7 +117,7 @@
             confirmCallback = onConfirm;
         }
 
-        function cancelConfirmation() {
+        window.cancelConfirmation = function() {
             document.getElementById('confirmation-modal').classList.add('hidden');
             confirmCallback = null;
         }
@@ -132,28 +137,60 @@
         });
 
         // CONFIGURACIÓN
-        function renderConfig() {
-            document.getElementById('config-hourly-rate').value = appData.config.hourlyRate;
-            document.getElementById('config-margin').value = appData.config.margin;
-            document.getElementById('config-usd-rate').value = appData.config.usdRate;
+        async function renderConfig() {
+            try {
+                const config = await db.getConfig();
+                document.getElementById('config-hourly-rate').value = config.hourlyRate;
+                document.getElementById('config-margin').value = config.margin;
+                document.getElementById('config-usd-rate').value = config.usdRate;
+            } catch (error) {
+                console.error('Error al cargar configuración:', error);
+                // Valores por defecto si hay error
+                document.getElementById('config-hourly-rate').value = 13000;
+                document.getElementById('config-margin').value = 40;
+                document.getElementById('config-usd-rate').value = 1200;
+            }
         }
 
-        function saveConfig() {
-            appData.config.hourlyRate = parseFloat(document.getElementById('config-hourly-rate').value) || 13000;
-            appData.config.margin = parseFloat(document.getElementById('config-margin').value) || 40;
-            appData.config.usdRate = parseFloat(document.getElementById('config-usd-rate').value) || 1200;
-            saveData(appData);
-            showToast('Configuración guardada');
+        window.saveConfig = async function() {
+            const config = {
+                hourlyRate: parseFloat(document.getElementById('config-hourly-rate').value) || 13000,
+                margin: parseFloat(document.getElementById('config-margin').value) || 40,
+                usdRate: parseFloat(document.getElementById('config-usd-rate').value) || 1200
+            };
+            
+            try {
+                await db.updateConfig(config);
+                showToast('Configuración guardada');
+            } catch (error) {
+                console.error('Error al guardar configuración:', error);
+                showToast('Error al guardar configuración', 'error');
+            }
         }
 
-        function resetAll() {
-            localStorage.removeItem('plugfixData');
-            appData = loadData();
-            window.location.href = 'index.html';
-            showToast('Aplicación reseteada');
+        window.resetAll = async function() {
+            try {
+                // 1. Destruir completamente la base de datos IndexedDB
+                await db.db.delete();
+                console.log('✅ Base de datos eliminada');
+                
+                // 2. Limpiar localStorage (por si quedó basura vieja)
+                localStorage.clear();
+                console.log('✅ LocalStorage limpiado');
+                
+                // 3. Marcar migración como completada para evitar que se migren datos viejos
+                localStorage.setItem('plugfix_migration_completed', 'true');
+                console.log('✅ Flag de migración establecido');
+                
+                // 4. Recargar la página para que el seeding se ejecute de nuevo
+                window.location.reload();
+            } catch (error) {
+                console.error('❌ Error al resetear la aplicación:', error);
+                showToast('Error al resetear la aplicación', 'error');
+            }
         }
 
-        function confirmResetAll() {
+        window.confirmResetAll = function() {
             showConfirmation(
                 '⚠️ ¿Resetear TODO?',
                 'Se borrarán TODOS los datos: marcas, modelos, servicios, configuración e historial. Esta acción es IRREVERSIBLE.',
@@ -163,9 +200,25 @@
         }
 
         // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
-            setActiveTab('config');
-            renderConfig();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inicializar la base de datos
+                await initializeDB();
+                db = useDB();
+                
+                // Set active tab (función de app.js)
+                if (typeof setActiveTab === 'function') {
+                    setActiveTab('config');
+                }
+                
+                // Renderizar configuración
+                await renderConfig();
+                
+                console.log('✅ Configuración inicializada correctamente');
+            } catch (error) {
+                console.error('❌ Error al inicializar:', error);
+                showToast('Error al inicializar la configuración', 'error');
+            }
         });
     </script>
 </body>
