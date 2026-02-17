@@ -81,10 +81,65 @@ class LocalDBService extends IDatabaseService {
         // Limpiar modelos Apple existentes para evitar duplicados
         await this.models.where('brandId').equals(appleId).delete();
 
-        // Modelos Samsung
+        // Modelos Samsung - Serie S Completa (hasta Feb 2026)
         const samsungModels = [
-            { id: 'a14', brandId: samsungId, name: 'Galaxy A14', riskFactor: 1.0 },
-            { id: 's23', brandId: samsungId, name: 'Galaxy S23', riskFactor: 1.5 }
+            // --- OTROS MODELOS POPULARES ---
+            { id: 'a14', brandId: samsungId, name: 'Galaxy A14', category: 'Gama Media-Baja', riskFactor: 1.0 },
+            
+            // --- ERA "GLASS & EDGE" (Tapas pegadas / Pantallas Curvas) [1.2x - 1.3x] ---
+            { id: 's6', brandId: samsungId, name: 'Galaxy S6', category: 'Gama Media-Baja', riskFactor: 1.2 },
+            { id: 's6edge', brandId: samsungId, name: 'Galaxy S6 Edge', category: 'Gama Media-Baja', riskFactor: 1.3 },
+            { id: 's6edgeplus', brandId: samsungId, name: 'Galaxy S6 Edge+', category: 'Gama Media-Baja', riskFactor: 1.3 },
+            { id: 's6active', brandId: samsungId, name: 'Galaxy S6 Active', category: 'Gama Media-Baja', riskFactor: 1.2 },
+            { id: 's7', brandId: samsungId, name: 'Galaxy S7', category: 'Gama Media-Baja', riskFactor: 1.2 },
+            { id: 's7edge', brandId: samsungId, name: 'Galaxy S7 Edge', category: 'Gama Media-Baja', riskFactor: 1.3 },
+            { id: 's7active', brandId: samsungId, name: 'Galaxy S7 Active', category: 'Gama Media-Baja', riskFactor: 1.2 },
+            { id: 's8', brandId: samsungId, name: 'Galaxy S8', category: 'Gama Media', riskFactor: 1.3 },
+            { id: 's8plus', brandId: samsungId, name: 'Galaxy S8+', category: 'Gama Media', riskFactor: 1.3 },
+            { id: 's8active', brandId: samsungId, name: 'Galaxy S8 Active', category: 'Gama Media', riskFactor: 1.3 },
+            { id: 's9', brandId: samsungId, name: 'Galaxy S9', category: 'Gama Media', riskFactor: 1.3 },
+            { id: 's9plus', brandId: samsungId, name: 'Galaxy S9+', category: 'Gama Media', riskFactor: 1.3 },
+            
+            // --- ERA MODERNA (Hole-punch / Dynamic AMOLED) [1.4x - 1.5x] ---
+            { id: 's10e', brandId: samsungId, name: 'Galaxy S10e', category: 'Gama Media', riskFactor: 1.3 },
+            { id: 's10', brandId: samsungId, name: 'Galaxy S10', category: 'Gama Media', riskFactor: 1.4 },
+            { id: 's10plus', brandId: samsungId, name: 'Galaxy S10+', category: 'Gama Media', riskFactor: 1.4 },
+            { id: 's105g', brandId: samsungId, name: 'Galaxy S10 5G', category: 'Gama Media', riskFactor: 1.4 },
+            { id: 's10lite', brandId: samsungId, name: 'Galaxy S10 Lite', category: 'Gama Media', riskFactor: 1.3 },
+            
+            { id: 's20', brandId: samsungId, name: 'Galaxy S20', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's20plus', brandId: samsungId, name: 'Galaxy S20+', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's20ultra', brandId: samsungId, name: 'Galaxy S20 Ultra', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 's20fe', brandId: samsungId, name: 'Galaxy S20 FE (Fan Edition)', category: 'Gama Media', riskFactor: 1.4 },
+            
+            { id: 's21', brandId: samsungId, name: 'Galaxy S21', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's21plus', brandId: samsungId, name: 'Galaxy S21+', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's21ultra', brandId: samsungId, name: 'Galaxy S21 Ultra', category: 'Gama Alta', riskFactor: 1.7 },
+            { id: 's21fe', brandId: samsungId, name: 'Galaxy S21 FE', category: 'Gama Media', riskFactor: 1.4 },
+            
+            { id: 's22', brandId: samsungId, name: 'Galaxy S22', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's22plus', brandId: samsungId, name: 'Galaxy S22+', category: 'Gama Alta', riskFactor: 1.5 },
+            { id: 's22ultra', brandId: samsungId, name: 'Galaxy S22 Ultra', category: 'Gama Alta', riskFactor: 1.7 },
+            
+            { id: 's23', brandId: samsungId, name: 'Galaxy S23', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 's23plus', brandId: samsungId, name: 'Galaxy S23+', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 's23ultra', brandId: samsungId, name: 'Galaxy S23 Ultra', category: 'Gama Alta', riskFactor: 1.8 },
+            { id: 's23fe', brandId: samsungId, name: 'Galaxy S23 FE', category: 'Gama Media', riskFactor: 1.5 },
+            
+            // --- GAMA RECIENTE (IA Integrada / Repuestos costosos) [1.6x - 1.9x] ---
+            { id: 's24', brandId: samsungId, name: 'Galaxy S24', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 's24plus', brandId: samsungId, name: 'Galaxy S24+', category: 'Gama Alta', riskFactor: 1.6 },
+            { id: 's24ultra', brandId: samsungId, name: 'Galaxy S24 Ultra', category: 'Premium', riskFactor: 1.9 },
+            { id: 's24fe', brandId: samsungId, name: 'Galaxy S24 FE', category: 'Gama Alta', riskFactor: 1.5 },
+            
+            { id: 's25', brandId: samsungId, name: 'Galaxy S25', category: 'Premium', riskFactor: 1.8 },
+            { id: 's25plus', brandId: samsungId, name: 'Galaxy S25+', category: 'Premium', riskFactor: 1.8 },
+            { id: 's25ultra', brandId: samsungId, name: 'Galaxy S25 Ultra', category: 'Premium', riskFactor: 2.0 },
+            
+            // --- FLAGSHIPS ACTUALES (Lanzamiento 2026) [2.0x - 2.2x] ---
+            { id: 's26', brandId: samsungId, name: 'Galaxy S26', category: 'Premium', riskFactor: 2.0 },
+            { id: 's26plus', brandId: samsungId, name: 'Galaxy S26+', category: 'Premium', riskFactor: 2.0 },
+            { id: 's26ultra', brandId: samsungId, name: 'Galaxy S26 Ultra', category: 'Premium', riskFactor: 2.2 }
         ];
 
         // Modelos iPhone - LISTADO COMPLETO (Histórico hasta Feb 2026)
