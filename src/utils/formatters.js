@@ -21,15 +21,15 @@ export function formatARS(value) {
 
 /**
  * Formatea valores en Dólares Estadounidenses (USD)
- * - Siempre 2 decimales
- * - Sin redondeo comercial agresivo
- * - Usa punto como separador decimal
+ * - Redondeo hacia arriba sin decimales
+ * - Separador de miles con coma
  * 
  * @param {number} value - Valor numérico a formatear
- * @returns {string} - Valor formateado (ej: "US$ 50.00")
+ * @returns {string} - Valor formateado (ej: "US$ 50")
  */
 export function formatUSD(value) {
-    return `US$ ${value.toFixed(2)}`;
+    const roundedValue = Math.ceil(value);
+    return `US$ ${roundedValue.toLocaleString('en-US')}`;
 }
 
 /**
