@@ -84,6 +84,15 @@
                             <option value="USD">USD</option>
                         </select>
                     </div>
+                    <!-- Advertencia USD > 1000 -->
+                    <div id="usd-warning" class="mt-2 text-sm text-yellow-400 hidden">
+                        <span class="inline-flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            ⚠️ ¿Estás ingresando el valor en Dólares? (Ej: 50 USD). Si es en Pesos, cambia el selector.
+                        </span>
+                    </div>
                     <div id="last-cost-hint" class="mt-2 text-sm text-gray-400 hidden">
                         <span class="inline-flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +107,12 @@
             <!-- Resultado -->
             <div id="result-container" class="mt-8 hidden">
                 <div class="bg-slate-800 rounded-2xl p-4 md:p-8 text-center border-2 border-cyan-500/30 shadow-xl">
-                    <p class="text-gray-400 text-xs md:text-sm uppercase tracking-wider mb-2 md:mb-3">Precio Sugerido al Público</p>
+                    <div class="flex justify-between items-center mb-2 md:mb-3">
+                        <p class="text-gray-400 text-xs md:text-sm uppercase tracking-wider flex-1 text-center">Precio Sugerido al Público</p>
+                        <button onclick="toggleDisplayCurrency()" id="currency-toggle-btn" class="text-xs bg-slate-700 hover:bg-slate-600 text-cyan-400 px-3 py-1 rounded-lg transition" title="Cambiar moneda">
+                            💵 USD
+                        </button>
+                    </div>
                     <p class="result-price-display font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-6 md:mb-8" id="final-price">$0</p>
                     <div class="result-details-grid grid grid-cols-2 gap-3 md:gap-6 text-left bg-slate-900/50 rounded-xl p-3 md:p-6 border border-slate-700 mb-4 md:mb-6">
                         <div>
@@ -272,6 +286,21 @@
         let currentPage = 1; // Página actual del historial
         const itemsPerPage = 5; // Elementos por página
         let dbInstance = null; // Instancia de la base de datos
+        let displayCurrency = 'ARS'; // Moneda de visualización (ARS o USD)
+        let cachedDolarRate = null; // Cache del tipo de cambio
+        
+        // 💰 FORMATEADORES DE MONEDA DISTINTIVOS
+        function formatARS(value) {
+            // Redondeo comercial: Siempre hacia arriba al 100 más cercano
+            const roundedValue = Math.ceil(value / 100) * 100;
+            // Formato: Sin decimales, separador de miles con punto
+            return `$ ${roundedValue.toLocaleString('es-AR')}`;
+        }
+        
+        function formatUSD(value) {
+            // Siempre 2 decimales, sin redondeo comercial agresivo
+            return `US$ ${value.toFixed(2)}`;
+        }
         
         // Esperar a que window.dbInstance esté disponible
         function waitForDB() {
@@ -386,14 +415,34 @@
             });
             document.getElementById('calc-cost').addEventListener('input', async () => {
                 hasUnsavedChanges = true;
+                checkUSDWarning(); // Validar advertencia USD
                 await calculatePrice();
             });
             document.getElementById('calc-currency').addEventListener('change', async () => {
                 hasUnsavedChanges = true;
+                checkUSDWarning(); // Validar advertencia USD
+                // 🔄 SINCRONIZACIÓN AUTOMÁTICA: Input de moneda -> Visualización
+                const selectedCurrency = document.getElementById('calc-currency').value;
+                displayCurrency = selectedCurrency; // Sincronizar con la vista
+                updateCurrencyBadge(); // Actualizar badge inmediatamente
                 await calculatePrice();
             });
         }
 
+        // 🆕 PASO 4: Alerta de Seguridad (Sanity Check)
+        function checkUSDWarning() {
+            const cost = parseFloat(document.getElementById('calc-cost').value) || 0;
+            const currency = document.getElementById('calc-currency').value;
+            const warningElement = document.getElementById('usd-warning');
+            
+            if (currency === 'USD' && cost > 1000) {
+                warningElement.classList.remove('hidden');
+            } else {
+                warningElement.classList.add('hidden');
+            }
+        }
+
+        // 🆕 PASO 2: Normalización del Costo (Backend del cálculo)
         async function calculatePrice() {
             if (!dbInstance) {
                 console.warn('Base de datos no disponible para calcular precio');
@@ -404,11 +453,11 @@
             const brandValue = document.getElementById('calc-brand').value;
             const modelValue = document.getElementById('calc-model').value;
             const serviceValue = document.getElementById('calc-service').value;
-            const cost = parseFloat(document.getElementById('calc-cost').value) || 0;
-            const currency = document.getElementById('calc-currency').value;
+            const inputCost = parseFloat(document.getElementById('calc-cost').value) || 0;
+            const inputCurrency = document.getElementById('calc-currency').value;
 
             // Si no están todos los campos completos, ocultar resultado
-            if (!brandValue || !modelValue || !serviceValue || cost === 0) {
+            if (!brandValue || !modelValue || !serviceValue || inputCost === 0) {
                 document.getElementById('result-container').classList.add('hidden');
                 lastCalculation = null;
                 return;
@@ -453,40 +502,109 @@
                     return;
                 }
 
-                // Convertir a ARS si es USD
-                const costARS = currency === 'USD' ? cost * config.usdRate : cost;
+                // PASO 1: Obtener la Cotización (Source of Truth)
+                const savedDolar = localStorage.getItem('cachedDolarPrice');
+                const dolarRate = savedDolar ? parseFloat(savedDolar) : (config.usdRate || 1200);
+                cachedDolarRate = dolarRate; // Guardar en cache global
+                
+                console.log(`💵 Usando cotización: $${dolarRate} (Fuente: ${savedDolar ? 'localStorage' : 'config DB'})`);
+
+                // PASO 2: Normalización - Todo se calcula en ARS primero
+                let baseCostInArs;
+                if (inputCurrency === 'USD') {
+                    baseCostInArs = inputCost * dolarRate;
+                    console.log(`🔄 Conversión: ${inputCost} USD × ${dolarRate} = ${baseCostInArs.toFixed(2)} ARS`);
+                } else {
+                    baseCostInArs = inputCost;
+                }
 
                 // Fórmula: (Costo * Margen) + (Horas * ValorHora * FactorRiesgo)
                 const marginMultiplier = 1 + (config.margin / 100);
-                const partCost = costARS * marginMultiplier;
+                const partCost = baseCostInArs * marginMultiplier;
                 const laborCost = service.hours * config.hourlyRate * model.riskFactor;
-                const finalPrice = partCost + laborCost;
-                const profit = finalPrice - costARS;
-                const profitMargin = ((profit / finalPrice) * 100).toFixed(1);
+                
+                // 🧮 REDONDEO COMERCIAL EN ARS - Precio Final
+                const finalPriceARSRaw = partCost + laborCost;
+                const finalPriceARS = Math.ceil(finalPriceARSRaw / 100) * 100; // Redondeo al 100 más cercano hacia arriba
+                const finalPriceUSD = finalPriceARS / dolarRate; // Calcular precio en USD
+                const profit = finalPriceARS - baseCostInArs;
+                const profitMargin = ((profit / finalPriceARS) * 100).toFixed(1);
 
-                // Mostrar resultado
+                console.log(`✅ Cálculo Final: ${finalPriceARS} ARS (~${finalPriceUSD.toFixed(2)} USD)`);
+
+                // Mostrar resultado según moneda de visualización (displayCurrency)
                 document.getElementById('result-container').classList.remove('hidden');
-                document.getElementById('final-price').textContent = `$${Math.round(finalPrice).toLocaleString('es-AR')}`;
-                document.getElementById('cost-breakdown').textContent = `$${Math.round(partCost).toLocaleString('es-AR')}`;
-                document.getElementById('labor-breakdown').textContent = `$${Math.round(laborCost).toLocaleString('es-AR')}`;
-                document.getElementById('profit-breakdown').textContent = `$${Math.round(profit).toLocaleString('es-AR')}`;
-                document.getElementById('margin-breakdown').textContent = `${profitMargin}%`;
+                updatePriceDisplay(finalPriceARS, finalPriceUSD, partCost, laborCost, profit, profitMargin);
 
-                // Guardar el cálculo actual para el historial
+                // Guardar el cálculo actual para el historial (siempre en ARS como base)
                 lastCalculation = {
                     date: new Date().toLocaleString('es-AR'),
                     clientName: clientName,
                     brand: brand.name,
                     model: model.name,
                     service: service.name,
-                    cost: costARS,
-                    price: finalPrice,
-                    profit: profit
+                    cost: baseCostInArs, // 🆕 Siempre guardar en ARS (normalizado)
+                    price: finalPriceARS,
+                    priceUSD: finalPriceUSD,
+                    profit: profit,
+                    dolarRate: dolarRate
                 };
             } catch (error) {
                 console.error('Error al calcular precio:', error);
                 showToast('Error al calcular el precio', 'error');
             }
+        }
+
+        // 🆕 Función para actualizar el badge de moneda
+        function updateCurrencyBadge() {
+            const toggleBtn = document.getElementById('currency-toggle-btn');
+            if (displayCurrency === 'ARS') {
+                toggleBtn.innerHTML = '💵 USD';
+                toggleBtn.title = 'Ver precio en dólares';
+                toggleBtn.classList.remove('bg-green-700', 'text-green-300');
+                toggleBtn.classList.add('bg-slate-700', 'text-cyan-400');
+            } else {
+                toggleBtn.innerHTML = '💰 ARS';
+                toggleBtn.title = 'Ver precio en pesos';
+                toggleBtn.classList.remove('bg-slate-700', 'text-cyan-400');
+                toggleBtn.classList.add('bg-green-700', 'text-green-300');
+            }
+        }
+        
+        // 🆕 Función para actualizar la visualización de precios
+        function updatePriceDisplay(priceARS, priceUSD, partCost, laborCost, profit, profitMargin) {
+            const finalPriceElement = document.getElementById('final-price');
+            
+            if (displayCurrency === 'ARS') {
+                finalPriceElement.textContent = formatARS(priceARS);
+                // Restablecer gradiente cyan-blue para ARS
+                finalPriceElement.className = 'result-price-display font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-6 md:mb-8';
+            } else {
+                finalPriceElement.textContent = formatUSD(priceUSD);
+                // 💚 Aplicar color verde esmeralda para USD
+                finalPriceElement.className = 'result-price-display font-extrabold text-green-400 mb-6 md:mb-8';
+            }
+            
+            // El desglose siempre se muestra en ARS con redondeo comercial (es la base de cálculo)
+            document.getElementById('cost-breakdown').textContent = formatARS(partCost);
+            document.getElementById('labor-breakdown').textContent = formatARS(laborCost);
+            document.getElementById('profit-breakdown').textContent = formatARS(profit);
+            document.getElementById('margin-breakdown').textContent = `${profitMargin}%`;
+            
+            // Actualizar badge para reflejar la moneda actual
+            updateCurrencyBadge();
+        }
+
+        // 🆕 Función para cambiar entre ARS y USD en la visualización (Toggle Manual)
+        function toggleDisplayCurrency() {
+            if (!lastCalculation) return;
+
+            // Cambiar moneda de visualización
+            displayCurrency = displayCurrency === 'ARS' ? 'USD' : 'ARS';
+            
+            // Actualizar badge y recalcular
+            updateCurrencyBadge();
+            calculatePrice();
         }
 
         function saveToHistory() {
@@ -725,7 +843,19 @@
                 }
 
                 const clientLine = lastCalculation.clientName ? `👤 Cliente: ${lastCalculation.clientName}\n` : '';
-                const budgetText = `🔧 PRESUPUESTO - soyNerin.tech\n\n${clientLine}📱 Dispositivo: ${lastCalculation.brand} ${lastCalculation.model}\n🛠️ Servicio: ${lastCalculation.service}\n\n💰 PRECIO TOTAL: $${Math.round(lastCalculation.price).toLocaleString('es-AR')}\n\n📋 Detalle:\n  • Costo Repuesto: $${Math.round(lastCalculation.cost * (1 + (config.margin / 100))).toLocaleString('es-AR')}\n  • Mano de Obra: $${Math.round(lastCalculation.price - (lastCalculation.cost * (1 + (config.margin / 100)))).toLocaleString('es-AR')}\n\n📅 Fecha: ${lastCalculation.date}\n\n⚡ soyNerin.tech - Servicio Técnico`;
+                
+                // 🆕 Agregar precio en ambas monedas con formateadores distintivos
+                // Aplicar redondeo comercial al precio final en ARS
+                const roundedPriceARS = Math.ceil(lastCalculation.price / 100) * 100;
+                const priceLineARS = `💰 PRECIO TOTAL: ${formatARS(roundedPriceARS)}`;
+                const priceLineUSD = lastCalculation.priceUSD ? `💵 Equivalente: ${formatUSD(lastCalculation.priceUSD)} (Cotización: $${lastCalculation.dolarRate})` : '';
+                const priceSection = priceLineUSD ? `${priceLineARS}\n${priceLineUSD}` : priceLineARS;
+                
+                // Calcular desglose con redondeo comercial
+                const partCostRounded = Math.ceil((lastCalculation.cost * (1 + (config.margin / 100))) / 100) * 100;
+                const laborCostRounded = roundedPriceARS - partCostRounded;
+                
+                const budgetText = `🔧 PRESUPUESTO - soyNerin.tech\n\n${clientLine}📱 Dispositivo: ${lastCalculation.brand} ${lastCalculation.model}\n🛠️ Servicio: ${lastCalculation.service}\n\n${priceSection}\n\n📋 Detalle:\n  • Costo Repuesto: ${formatARS(partCostRounded)}\n  • Mano de Obra: ${formatARS(laborCostRounded)}\n\n📅 Fecha: ${lastCalculation.date}\n\n⚡ soyNerin.tech - Servicio Técnico`;
 
                 // Copiar al portapapeles
                 navigator.clipboard.writeText(budgetText).then(() => {
