@@ -52,13 +52,13 @@
             <h2 class="text-cyan-400 page-title">📱 Marcas y Modelos</h2>
             
             <div class="space-y-element">
-                <h3 class="text-white">Agregar Marca</h3>
+                <h3 class="text-white font-semibold mb-3">Agregar Marca</h3>
                 <input type="text" id="new-brand" class="input-base mb-2" placeholder="Nombre de la marca">
                 <button onclick="addBrand()" class="w-full btn btn-primary">Agregar Marca</button>
             </div>
 
             <div class="space-y-element">
-                <h3 class="text-white">Agregar Modelo</h3>
+                <h3 class="text-white font-semibold mb-3">Agregar Modelo</h3>
                 <input type="text" id="model-brand-select" list="model-brand-list" class="input-base mb-2" placeholder="Escribe o selecciona una marca..." autocomplete="off">
                 <datalist id="model-brand-list"></datalist>
                 <div class="flex flex-wrap gap-2 mb-2">
@@ -74,7 +74,7 @@
             </div>
 
             <!-- Barra de Herramientas -->
-            <div class="flex flex-col md:flex-row gap-3 mb-4">
+            <div class="flex flex-col md:flex-row gap-3 mb-4 mt-6">
                 <!-- Input de Búsqueda (70%) -->
                 <div class="relative w-full md:flex-[7]">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -85,7 +85,7 @@
                     <input 
                         type="text" 
                         id="search-brands" 
-                        class="input-base pl-10" 
+                        class="input-base pl-12" 
                         placeholder="Buscar marca o modelo..."
                         oninput="handleSearchAndSort()"
                         autocomplete="off"
@@ -118,6 +118,7 @@
             <h2 class="text-cyan-400 page-title">🔧 Servicios</h2>
             
             <div class="space-y-element">
+                <h3 class="text-white font-semibold mb-3">Agregar Servicio</h3>
                 <div class="space-y-2">
                     <input type="text" id="new-service-name" class="input-base" placeholder="Nombre del servicio">
                     <input type="number" step="0.5" id="new-service-hours" class="input-base" placeholder="Horas estimadas">
@@ -126,7 +127,7 @@
             </div>
 
             <!-- Grid de Servicios -->
-            <div id="services-list" class="services-grid">
+            <div id="services-list" class="services-grid mt-6">
                 <div class="text-gray-500 text-center py-8 col-span-2">No hay servicios registrados</div>
             </div>
         </div>
