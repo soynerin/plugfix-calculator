@@ -70,7 +70,27 @@
                 <button onclick="addModel()" class="w-full btn-primary py-3 rounded-lg text-white font-bold">Agregar Modelo</button>
             </div>
 
-            <div id="brands-list" class="space-y-4"></div>
+            <!-- Barra de Búsqueda -->
+            <div class="relative mb-4">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="search-brands" 
+                    class="w-full bg-slate-700 text-white pl-10 pr-4 py-3 rounded-lg border border-slate-600 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition" 
+                    placeholder="Buscar marca o modelo..."
+                    oninput="searchBrands(this.value)"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- Acordeón de Marcas y Modelos -->
+            <div id="brands-list" class="space-y-3">
+                <p class="text-gray-500 text-center py-8">No hay marcas registradas</p>
+            </div>
         </div>
 
         <!-- Servicios -->
@@ -85,7 +105,10 @@
                 </div>
             </div>
 
-            <div id="services-list" class="space-y-3"></div>
+            <!-- Grid de Servicios -->
+            <div id="services-list" class="services-grid">
+                <div class="text-gray-500 text-center py-8 col-span-2">No hay servicios registrados</div>
+            </div>
         </div>
     </main>
 
@@ -236,34 +259,155 @@
 
         function renderBrandsList() {
             const brandsList = document.getElementById('brands-list');
-            brandsList.innerHTML = appData.brands.map(brand => `
-                <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-white font-bold text-lg">${brand.name}</h4>
-                        <button onclick="deleteBrand('${brand.id}')" class="delete-btn-brand text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar marca completa">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="space-y-2">
-                        ${brand.models.map(model => `
-                            <div class="flex justify-between items-center bg-slate-800/50 rounded p-3">
-                                <div>
-                                    <span class="text-gray-300">${model.name}</span>
-                                    <span class="text-cyan-400 text-sm ml-2">(${model.riskFactor}x)</span>
-                                </div>
-                                <button onclick="deleteModel('${brand.id}', '${model.id}')" class="delete-btn-model text-gray-400 hover:text-red-400 hover:bg-gray-400/10 p-2 rounded transition" title="Eliminar modelo">
+            
+            if (appData.brands.length === 0) {
+                brandsList.innerHTML = '<p class="text-gray-500 text-center py-8">No hay marcas registradas</p>';
+                return;
+            }
+            
+            brandsList.innerHTML = appData.brands.map((brand, index) => {
+                const accordionId = `accordion-${brand.id}`;
+                
+                return `
+                    <div class="bg-slate-700/50 rounded-lg border border-slate-600 overflow-hidden" data-brand-id="${brand.id}">
+                        <!-- Cabecera del Acordeón -->
+                        <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70 transition" onclick="toggleAccordion('${accordionId}')">
+                            <div class="flex items-center gap-3 flex-1">
+                                <svg id="icon-${accordionId}" class="w-5 h-5 text-cyan-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                <h4 class="text-white font-bold text-lg">${brand.name}</h4>
+                                <span class="inline-block bg-cyan-500/20 text-cyan-400 rounded-full px-3 py-1 text-xs font-semibold">
+                                    ${brand.models.length} ${brand.models.length === 1 ? 'Modelo' : 'Modelos'}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                                <button onclick="deleteBrand('${brand.id}')" class="delete-btn-brand text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar marca completa">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
                             </div>
-                        `).join('')}
-                        ${brand.models.length === 0 ? '<p class="text-gray-500 text-sm">No hay modelos</p>' : ''}
+                        </div>
+                        
+                        <!-- Contenido Expandible -->
+                        <div id="${accordionId}" class="accordion-content max-h-0 overflow-hidden transition-all duration-300">
+                            <div class="p-4 pt-0 border-t border-slate-600">
+                                ${brand.models.length > 0 ? `
+                                    <div class="models-grid">
+                                        ${brand.models.map(model => {
+                                            // Determinar color y texto del badge según el factor de riesgo
+                                            let badgeClass = '';
+                                            let badgeText = '';
+                                            
+                                            if (model.riskFactor <= 1.0) {
+                                                badgeClass = 'badge-low';
+                                                badgeText = 'Gama Baja';
+                                            } else if (model.riskFactor <= 1.2) {
+                                                badgeClass = 'badge-medium';
+                                                badgeText = 'Gama Media';
+                                            } else if (model.riskFactor <= 1.5) {
+                                                badgeClass = 'badge-high';
+                                                badgeText = 'Gama Alta';
+                                            } else {
+                                                badgeClass = 'badge-premium';
+                                                badgeText = 'Premium';
+                                            }
+                                            
+                                            return `
+                                                <div class="model-mini-card">
+                                                    <button onclick="deleteModel('${brand.id}', '${model.id}')" class="model-delete-btn" title="Eliminar modelo">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                    </button>
+                                                    <div class="model-content">
+                                                        <h5 class="model-name">${model.name}</h5>
+                                                        <div class="flex items-center gap-2 mt-2">
+                                                            <span class="model-badge ${badgeClass}">${badgeText}</span>
+                                                            <span class="text-gray-500 text-xs font-mono">${model.riskFactor}x</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                ` : '<p class="text-gray-500 text-sm text-center mt-3">No hay modelos en esta marca</p>'}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+        }
+        
+        function toggleAccordion(accordionId) {
+            const content = document.getElementById(accordionId);
+            const icon = document.getElementById(`icon-${accordionId}`);
+            
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                // Cerrar
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                // Abrir
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+
+        // Búsqueda en tiempo real
+        let searchTimeout;
+        function searchBrands(query) {
+            clearTimeout(searchTimeout);
+            
+            searchTimeout = setTimeout(() => {
+                const searchTerm = query.toLowerCase().trim();
+                
+                appData.brands.forEach(brand => {
+                    const brandElement = document.querySelector(`[data-brand-id="${brand.id}"]`);
+                    if (!brandElement) return;
+                    
+                    const accordionId = `accordion-${brand.id}`;
+                    const accordionContent = document.getElementById(accordionId);
+                    const accordionIcon = document.getElementById(`icon-${accordionId}`);
+                    
+                    // Buscar coincidencias en marca o modelos
+                    const brandMatches = brand.name.toLowerCase().includes(searchTerm);
+                    const matchingModels = brand.models.filter(model => 
+                        model.name.toLowerCase().includes(searchTerm)
+                    );
+                    
+                    if (!searchTerm) {
+                        // Sin búsqueda: mostrar todo y colapsar
+                        brandElement.style.display = '';
+                        accordionContent.style.maxHeight = '0px';
+                        accordionIcon.style.transform = 'rotate(0deg)';
+                        
+                        // Quitar resaltado
+                        brandElement.querySelectorAll('.model-mini-card').forEach(card => {
+                            card.classList.remove('highlight-match');
+                        });
+                    } else if (brandMatches || matchingModels.length > 0) {
+                        // Hay coincidencias: mostrar y expandir
+                        brandElement.style.display = '';
+                        accordionContent.style.maxHeight = accordionContent.scrollHeight + 'px';
+                        accordionIcon.style.transform = 'rotate(90deg)';
+                        
+                        // Resaltar modelos coincidentes
+                        brandElement.querySelectorAll('.model-mini-card').forEach(card => {
+                            const modelName = card.querySelector('.model-name').textContent;
+                            if (modelName.toLowerCase().includes(searchTerm)) {
+                                card.classList.add('highlight-match');
+                            } else {
+                                card.classList.remove('highlight-match');
+                            }
+                        });
+                    } else {
+                        // Sin coincidencias: ocultar
+                        brandElement.style.display = 'none';
+                    }
+                });
+            }, 200); // Debounce de 200ms
         }
 
         function addService() {
@@ -305,17 +449,26 @@
 
         function renderServicesList() {
             const servicesList = document.getElementById('services-list');
+            
+            if (appData.services.length === 0) {
+                servicesList.innerHTML = '<div class="text-gray-500 text-center py-8 col-span-2">No hay servicios registrados</div>';
+                return;
+            }
+            
             servicesList.innerHTML = appData.services.map(service => `
-                <div class="flex justify-between items-center bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                    <div>
-                        <p class="text-white font-medium">${service.name}</p>
-                        <p class="text-gray-400 text-sm">${service.hours} horas estimadas</p>
-                    </div>
-                    <button onclick="deleteService('${service.id}')" class="delete-btn text-red-400 hover:text-red-300 hover:bg-red-400/10 p-2 rounded-lg transition" title="Eliminar servicio">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="service-mini-card">
+                    <button onclick="deleteService('${service.id}')" class="service-delete-btn" title="Eliminar servicio">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
                     </button>
+                    <div class="flex items-center justify-between gap-4">
+                        <h3 class="service-name">${service.name}</h3>
+                        <div class="service-hours-badge">
+                            <div class="hours-number">${service.hours}</div>
+                            <div class="hours-label">horas</div>
+                        </div>
+                    </div>
                 </div>
             `).join('');
         }
