@@ -395,3 +395,56 @@ input[list]::-webkit-calendar-picker-indicator {
 #pagination-container button:hover:not(:disabled) {
     transform: translateY(-1px);
 }
+
+/* ============================================
+   MOBILE OPTIMIZATIONS - RESULT CARD
+   ============================================ */
+
+/* Price Display - Responsive sizing with clamp */
+.result-price-display {
+    font-size: clamp(2.5rem, 12vw, 4.5rem);
+    line-height: 1.1;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    padding: 0 0.5rem;
+}
+
+/* Details grid - Reduce padding on mobile */
+@media (max-width: 640px) {
+    .result-details-grid {
+        padding: 0.75rem !important;
+        gap: 0.75rem !important;
+    }
+    
+    .result-details-grid > div {
+        padding: 0.25rem;
+    }
+}
+
+/* Action buttons - Stack vertically on mobile */
+@media (max-width: 640px) {
+    .result-actions-container {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .result-actions-container button {
+        width: 100%;
+        font-size: 1rem;
+        padding: 0.875rem;
+        white-space: nowrap;
+    }
+}
+
+/* Extra small screens - Further optimizations */
+@media (max-width: 375px) {
+    .result-price-display {
+        font-size: clamp(2rem, 10vw, 3rem);
+        margin-bottom: 1rem !important;
+    }
+    
+    .result-details-grid {
+        padding: 0.5rem !important;
+        gap: 0.5rem !important;
+    }
+}

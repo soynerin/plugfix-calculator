@@ -97,32 +97,32 @@
 
             <!-- Resultado -->
             <div id="result-container" class="mt-8 hidden">
-                <div class="bg-slate-800 rounded-2xl p-8 text-center border-2 border-cyan-500/30 shadow-xl">
-                    <p class="text-gray-400 text-sm uppercase tracking-wider mb-3">Precio Sugerido al Público</p>
-                    <p class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-8" id="final-price">$0</p>
-                    <div class="grid grid-cols-2 gap-6 text-left bg-slate-900/50 rounded-xl p-6 border border-slate-700 mb-6">
+                <div class="bg-slate-800 rounded-2xl p-4 md:p-8 text-center border-2 border-cyan-500/30 shadow-xl">
+                    <p class="text-gray-400 text-xs md:text-sm uppercase tracking-wider mb-2 md:mb-3">Precio Sugerido al Público</p>
+                    <p class="result-price-display font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-6 md:mb-8" id="final-price">$0</p>
+                    <div class="result-details-grid grid grid-cols-2 gap-3 md:gap-6 text-left bg-slate-900/50 rounded-xl p-3 md:p-6 border border-slate-700 mb-4 md:mb-6">
                         <div>
-                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Costo Repuesto</p>
-                            <p class="text-white font-bold text-2xl" id="cost-breakdown">$0</p>
+                            <p class="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide mb-1 md:mb-2">Costo Repuesto</p>
+                            <p class="text-white font-bold text-lg md:text-2xl" id="cost-breakdown">$0</p>
                         </div>
                         <div>
-                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Mano de Obra</p>
-                            <p class="text-white font-bold text-2xl" id="labor-breakdown">$0</p>
+                            <p class="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide mb-1 md:mb-2">Mano de Obra</p>
+                            <p class="text-white font-bold text-lg md:text-2xl" id="labor-breakdown">$0</p>
                         </div>
                         <div>
-                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Ganancia Total</p>
-                            <p class="text-green-400 font-bold text-2xl" id="profit-breakdown">$0</p>
+                            <p class="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide mb-1 md:mb-2">Ganancia Total</p>
+                            <p class="text-green-400 font-bold text-lg md:text-2xl" id="profit-breakdown">$0</p>
                         </div>
                         <div>
-                            <p class="text-gray-500 text-xs uppercase tracking-wide mb-2">Margen %</p>
-                            <p class="text-green-400 font-bold text-2xl" id="margin-breakdown">0%</p>
+                            <p class="text-gray-500 text-[10px] md:text-xs uppercase tracking-wide mb-1 md:mb-2">Margen %</p>
+                            <p class="text-green-400 font-bold text-lg md:text-2xl" id="margin-breakdown">0%</p>
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="saveToHistory()" class="flex-1 btn-primary text-white font-bold py-3 rounded-lg text-lg">
+                    <div class="result-actions-container flex flex-col sm:flex-row gap-3">
+                        <button onclick="saveToHistory()" class="w-full sm:flex-1 btn-primary text-white font-bold py-3 rounded-lg text-base md:text-lg">
                             💾 Guardar en Historial
                         </button>
-                        <button onclick="copyBudgetToClipboard()" class="flex-1 btn-secondary text-white font-bold py-3 rounded-lg text-lg">
+                        <button onclick="copyBudgetToClipboard()" class="w-full sm:flex-1 btn-secondary text-white font-bold py-3 rounded-lg text-base md:text-lg">
                             📋 Copiar Presupuesto
                         </button>
                     </div>
