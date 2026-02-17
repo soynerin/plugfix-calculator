@@ -412,6 +412,39 @@ input[list]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+/* Estilos mejorados para datalist (limitado por el navegador) */
+input[list] {
+    position: relative;
+}
+
+/* Forzar tema oscuro en el dropdown del datalist (Chrome/Edge) */
+input[list]::-webkit-list-button {
+    color: white;
+}
+
+/* Intentar forzar fondo oscuro en las opciones del datalist */
+datalist {
+    background-color: #1e293b;
+    color: white;
+}
+
+/* Estilos específicos para las opciones (soporte limitado) */
+option {
+    background-color: #1e293b !important;
+    color: white !important;
+    padding: 8px 12px;
+}
+
+option:hover {
+    background-color: #334155 !important;
+}
+
+/* Estilo para el contenedor del datalist cuando está abierto */
+input[list]:focus {
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
 /* ============================================
    DELETE BUTTONS (Touch Target Optimization)
    ============================================ */

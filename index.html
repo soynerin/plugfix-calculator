@@ -271,82 +271,135 @@
         let pendingNavigation = null; // Guardar URL de navegación pendiente
         let currentPage = 1; // Página actual del historial
         const itemsPerPage = 5; // Elementos por página
-
-        function renderCalculator() {
-            // Cargar marcas
-            const brandList = document.getElementById('brand-list');
-            brandList.innerHTML = '';
-            appData.brands.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand.name;
-                option.dataset.id = brand.id;
-                brandList.appendChild(option);
+        let dbInstance = null; // Instancia de la base de datos
+        
+        // Esperar a que window.dbInstance esté disponible
+        function waitForDB() {
+            return new Promise((resolve) => {
+                const checkDB = setInterval(() => {
+                    if (window.dbInstance) {
+                        dbInstance = window.dbInstance;
+                        clearInterval(checkDB);
+                        resolve();
+                    }
+                }, 100);
             });
-
-            // Cargar servicios
-            const serviceList = document.getElementById('service-list');
-            serviceList.innerHTML = '';
-            appData.services.forEach(service => {
-                const option = document.createElement('option');
-                option.value = service.name;
-                option.dataset.id = service.id;
-                option.dataset.hours = service.hours;
-                serviceList.appendChild(option);
-            });
-
-            renderHistory();
-            setupReactiveCalculation();
         }
 
-        document.getElementById('calc-brand').addEventListener('input', function() {
+        async function renderCalculator() {
+            try {
+                if (!dbInstance) {
+                    console.warn('Base de datos no inicializada aún');
+                    return;
+                }
+
+                // Cargar marcas desde Dexie
+                const brandList = document.getElementById('brand-list');
+                brandList.innerHTML = '';
+                const brands = await dbInstance.brands.toArray();
+                brands.forEach(brand => {
+                    const option = document.createElement('option');
+                    option.value = brand.name;
+                    option.dataset.id = brand.id;
+                    brandList.appendChild(option);
+                });
+
+                // Cargar servicios desde Dexie
+                const serviceList = document.getElementById('service-list');
+                serviceList.innerHTML = '';
+                const services = await dbInstance.services.toArray();
+                services.forEach(service => {
+                    const option = document.createElement('option');
+                    option.value = service.name;
+                    option.dataset.id = service.id;
+                    option.dataset.hours = service.hours;
+                    serviceList.appendChild(option);
+                });
+
+                renderHistory();
+                setupReactiveCalculation();
+            } catch (error) {
+                console.error('Error al renderizar calculadora:', error);
+                showToast('Error al cargar datos de la base de datos', 'error');
+            }
+        }
+
+        // Event listener para cambio de marca (Cascading Select)
+        document.getElementById('calc-brand').addEventListener('input', async function() {
             const modelList = document.getElementById('model-list');
             const modelInput = document.getElementById('calc-model');
             modelList.innerHTML = '';
             modelInput.value = '';
             
-            const brand = appData.brands.find(b => b.name === this.value);
-            if (brand) {
-                modelInput.disabled = false;
-                modelInput.placeholder = 'Escribe o selecciona un modelo...';
-                brand.models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.name;
-                    option.dataset.id = model.id;
-                    option.dataset.risk = model.riskFactor;
-                    modelList.appendChild(option);
-                });
-            } else {
-                modelInput.disabled = true;
-                modelInput.placeholder = 'Primero selecciona una marca';
+            if (!dbInstance) {
+                console.warn('Base de datos no disponible');
+                return;
             }
+
+            try {
+                // Buscar marca por nombre en Dexie
+                const brands = await dbInstance.brands.where('name').equals(this.value).toArray();
+                const brand = brands[0];
+                
+                if (brand) {
+                    modelInput.disabled = false;
+                    modelInput.placeholder = 'Escribe o selecciona un modelo...';
+                    
+                    // Consultar modelos filtrados por brandId desde Dexie
+                    const models = await dbInstance.models
+                        .where('brandId').equals(brand.id)
+                        .sortBy('name'); // Ordenar alfabéticamente
+                    
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.dataset.id = model.id;
+                        option.dataset.risk = model.riskFactor;
+                        modelList.appendChild(option);
+                    });
+                } else {
+                    modelInput.disabled = true;
+                    modelInput.placeholder = 'Primero selecciona una marca';
+                }
+            } catch (error) {
+                console.error('Error al cargar modelos:', error);
+                modelInput.disabled = true;
+                modelInput.placeholder = 'Error al cargar modelos';
+            }
+            
             hasUnsavedChanges = true;
             updateLastCostHint(); // Actualizar sugerencia de costo
-            calculatePrice(); // Recalcular cuando cambie la marca
+            await calculatePrice(); // Recalcular cuando cambie la marca
         });
 
         function setupReactiveCalculation() {
             // Agregar listeners a todos los campos
-            document.getElementById('calc-model').addEventListener('input', () => {
+            document.getElementById('calc-model').addEventListener('input', async () => {
                 hasUnsavedChanges = true;
                 updateLastCostHint(); // Actualizar sugerencia de costo
-                calculatePrice();
+                await calculatePrice();
             });
-            document.getElementById('calc-service').addEventListener('input', () => {
+            document.getElementById('calc-service').addEventListener('input', async () => {
                 hasUnsavedChanges = true;
                 updateLastCostHint(); // Actualizar sugerencia de costo
-                calculatePrice();
+                await calculatePrice();
             });
-            document.getElementById('calc-cost').addEventListener('input', () => {
+            document.getElementById('calc-cost').addEventListener('input', async () => {
                 hasUnsavedChanges = true;
-                calculatePrice();
+                await calculatePrice();
             });
-            document.getElementById('calc-currency').addEventListener('change', () => {
+            document.getElementById('calc-currency').addEventListener('change', async () => {
                 hasUnsavedChanges = true;
-                calculatePrice();
+                await calculatePrice();
             });
         }
 
-        function calculatePrice() {
+        async function calculatePrice() {
+            if (!dbInstance) {
+                console.warn('Base de datos no disponible para calcular precio');
+                return;
+            }
+
             const clientName = document.getElementById('calc-client-name').value.trim();
             const brandValue = document.getElementById('calc-brand').value;
             const modelValue = document.getElementById('calc-model').value;
@@ -361,61 +414,79 @@
                 return;
             }
 
-            // Buscar marca por nombre
-            const brand = appData.brands.find(b => b.name === brandValue);
-            if (!brand) {
-                document.getElementById('result-container').classList.add('hidden');
-                lastCalculation = null;
-                return;
+            try {
+                // Buscar marca por nombre en Dexie
+                const brands = await dbInstance.brands.where('name').equals(brandValue).toArray();
+                const brand = brands[0];
+                if (!brand) {
+                    document.getElementById('result-container').classList.add('hidden');
+                    lastCalculation = null;
+                    return;
+                }
+
+                // Buscar modelo por nombre y brandId en Dexie
+                const models = await dbInstance.models
+                    .where('brandId').equals(brand.id)
+                    .and(m => m.name === modelValue)
+                    .toArray();
+                const model = models[0];
+                if (!model) {
+                    document.getElementById('result-container').classList.add('hidden');
+                    lastCalculation = null;
+                    return;
+                }
+
+                // Buscar servicio por nombre en Dexie
+                const services = await dbInstance.services.where('name').equals(serviceValue).toArray();
+                const service = services[0];
+                if (!service) {
+                    document.getElementById('result-container').classList.add('hidden');
+                    lastCalculation = null;
+                    return;
+                }
+
+                // Obtener configuración desde Dexie
+                const config = await dbInstance.config.get('main');
+                if (!config) {
+                    console.error('Configuración no encontrada en la base de datos');
+                    showToast('Error: Configuración no disponible', 'error');
+                    return;
+                }
+
+                // Convertir a ARS si es USD
+                const costARS = currency === 'USD' ? cost * config.usdRate : cost;
+
+                // Fórmula: (Costo * Margen) + (Horas * ValorHora * FactorRiesgo)
+                const marginMultiplier = 1 + (config.margin / 100);
+                const partCost = costARS * marginMultiplier;
+                const laborCost = service.hours * config.hourlyRate * model.riskFactor;
+                const finalPrice = partCost + laborCost;
+                const profit = finalPrice - costARS;
+                const profitMargin = ((profit / finalPrice) * 100).toFixed(1);
+
+                // Mostrar resultado
+                document.getElementById('result-container').classList.remove('hidden');
+                document.getElementById('final-price').textContent = `$${Math.round(finalPrice).toLocaleString('es-AR')}`;
+                document.getElementById('cost-breakdown').textContent = `$${Math.round(partCost).toLocaleString('es-AR')}`;
+                document.getElementById('labor-breakdown').textContent = `$${Math.round(laborCost).toLocaleString('es-AR')}`;
+                document.getElementById('profit-breakdown').textContent = `$${Math.round(profit).toLocaleString('es-AR')}`;
+                document.getElementById('margin-breakdown').textContent = `${profitMargin}%`;
+
+                // Guardar el cálculo actual para el historial
+                lastCalculation = {
+                    date: new Date().toLocaleString('es-AR'),
+                    clientName: clientName,
+                    brand: brand.name,
+                    model: model.name,
+                    service: service.name,
+                    cost: costARS,
+                    price: finalPrice,
+                    profit: profit
+                };
+            } catch (error) {
+                console.error('Error al calcular precio:', error);
+                showToast('Error al calcular el precio', 'error');
             }
-
-            // Buscar modelo por nombre
-            const model = brand.models.find(m => m.name === modelValue);
-            if (!model) {
-                document.getElementById('result-container').classList.add('hidden');
-                lastCalculation = null;
-                return;
-            }
-
-            // Buscar servicio por nombre
-            const service = appData.services.find(s => s.name === serviceValue);
-            if (!service) {
-                document.getElementById('result-container').classList.add('hidden');
-                lastCalculation = null;
-                return;
-            }
-            const config = appData.config;
-
-            // Convertir a ARS si es USD
-            const costARS = currency === 'USD' ? cost * config.usdRate : cost;
-
-            // Fórmula: (Costo * Margen) + (Horas * ValorHora * FactorRiesgo)
-            const marginMultiplier = 1 + (config.margin / 100);
-            const partCost = costARS * marginMultiplier;
-            const laborCost = service.hours * config.hourlyRate * model.riskFactor;
-            const finalPrice = partCost + laborCost;
-            const profit = finalPrice - costARS;
-            const profitMargin = ((profit / finalPrice) * 100).toFixed(1);
-
-            // Mostrar resultado
-            document.getElementById('result-container').classList.remove('hidden');
-            document.getElementById('final-price').textContent = `$${Math.round(finalPrice).toLocaleString('es-AR')}`;
-            document.getElementById('cost-breakdown').textContent = `$${Math.round(partCost).toLocaleString('es-AR')}`;
-            document.getElementById('labor-breakdown').textContent = `$${Math.round(laborCost).toLocaleString('es-AR')}`;
-            document.getElementById('profit-breakdown').textContent = `$${Math.round(profit).toLocaleString('es-AR')}`;
-            document.getElementById('margin-breakdown').textContent = `${profitMargin}%`;
-
-            // Guardar el cálculo actual para el historial
-            lastCalculation = {
-                date: new Date().toLocaleString('es-AR'),
-                clientName: clientName,
-                brand: brand.name,
-                model: model.name,
-                service: service.name,
-                cost: costARS,
-                price: finalPrice,
-                profit: profit
-            };
         }
 
         function saveToHistory() {
@@ -634,47 +705,66 @@
         }
 
         // Copiar presupuesto al portapapeles
-        function copyBudgetToClipboard() {
+        async function copyBudgetToClipboard() {
             if (!lastCalculation) {
                 showToast('No hay presupuesto para copiar', 'error');
                 return;
             }
 
-            const clientLine = lastCalculation.clientName ? `👤 Cliente: ${lastCalculation.clientName}\n` : '';
-            const budgetText = `🔧 PRESUPUESTO - soyNerin.tech\n\n${clientLine}📱 Dispositivo: ${lastCalculation.brand} ${lastCalculation.model}\n🛠️ Servicio: ${lastCalculation.service}\n\n💰 PRECIO TOTAL: $${Math.round(lastCalculation.price).toLocaleString('es-AR')}\n\n📋 Detalle:\n  • Costo Repuesto: $${Math.round(lastCalculation.cost * (1 + (appData.config.margin / 100))).toLocaleString('es-AR')}\n  • Mano de Obra: $${Math.round(lastCalculation.price - (lastCalculation.cost * (1 + (appData.config.margin / 100)))).toLocaleString('es-AR')}\n\n📅 Fecha: ${lastCalculation.date}\n\n⚡ soyNerin.tech - Servicio Técnico`;
+            if (!dbInstance) {
+                showToast('Base de datos no disponible', 'error');
+                return;
+            }
 
-            // Copiar al portapapeles
-            navigator.clipboard.writeText(budgetText).then(() => {
-                showToast('✅ Presupuesto copiado al portapapeles');
-            }).catch(err => {
-                // Fallback para navegadores más antiguos
-                const textArea = document.createElement('textarea');
-                textArea.value = budgetText;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast('✅ Presupuesto copiado al portapapeles');
-                } catch (err) {
-                    showToast('❌ Error al copiar. Intenta nuevamente', 'error');
+            try {
+                // Obtener configuración desde Dexie
+                const config = await dbInstance.config.get('main');
+                if (!config) {
+                    showToast('Error: Configuración no disponible', 'error');
+                    return;
                 }
-                document.body.removeChild(textArea);
-            });
+
+                const clientLine = lastCalculation.clientName ? `👤 Cliente: ${lastCalculation.clientName}\n` : '';
+                const budgetText = `🔧 PRESUPUESTO - soyNerin.tech\n\n${clientLine}📱 Dispositivo: ${lastCalculation.brand} ${lastCalculation.model}\n🛠️ Servicio: ${lastCalculation.service}\n\n💰 PRECIO TOTAL: $${Math.round(lastCalculation.price).toLocaleString('es-AR')}\n\n📋 Detalle:\n  • Costo Repuesto: $${Math.round(lastCalculation.cost * (1 + (config.margin / 100))).toLocaleString('es-AR')}\n  • Mano de Obra: $${Math.round(lastCalculation.price - (lastCalculation.cost * (1 + (config.margin / 100)))).toLocaleString('es-AR')}\n\n📅 Fecha: ${lastCalculation.date}\n\n⚡ soyNerin.tech - Servicio Técnico`;
+
+                // Copiar al portapapeles
+                navigator.clipboard.writeText(budgetText).then(() => {
+                    showToast('✅ Presupuesto copiado al portapapeles');
+                }).catch(err => {
+                    // Fallback para navegadores más antiguos
+                    const textArea = document.createElement('textarea');
+                    textArea.value = budgetText;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('✅ Presupuesto copiado al portapapeles');
+                    } catch (err) {
+                        showToast('❌ Error al copiar. Intenta nuevamente', 'error');
+                    }
+                    document.body.removeChild(textArea);
+                });
+            } catch (error) {
+                console.error('Error al copiar presupuesto:', error);
+                showToast('Error al generar presupuesto', 'error');
+            }
         }
 
         // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             setActiveTab('calculator');
-            renderCalculator();
+            // Esperar a que la base de datos esté lista
+            await waitForDB();
+            await renderCalculator();
             setupNavigationWarning();
         });
     </script>
     
     <!-- Nueva arquitectura de datos - Inicialización -->
     <script type="module">
-        import { initializeDB } from './database/databaseProvider.js';
+        import { useDB, initializeDB } from './database/databaseProvider.js';
         import migrationService from './database/migrationService.js';
         
         // Inicializar base de datos al cargar la aplicación
@@ -689,6 +779,14 @@
                 // Inicializar IndexedDB
                 await initializeDB();
                 console.log('🚀 Base de datos inicializada');
+                
+                // Asignar instancia a la variable global para que la calculadora pueda usarla
+                window.dbInstance = useDB().db;
+                
+                // Re-renderizar calculadora con datos frescos de la DB
+                if (typeof renderCalculator === 'function') {
+                    await renderCalculator();
+                }
             } catch (error) {
                 console.error('❌ Error al inicializar base de datos:', error);
             }
