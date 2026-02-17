@@ -500,10 +500,10 @@
             
             switch(sortOption) {
                 case 'name-asc':
-                    return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                    return sorted.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
                 
                 case 'name-desc':
-                    return sorted.sort((a, b) => b.name.localeCompare(a.name));
+                    return sorted.sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' }));
                 
                 case 'complexity-desc': // Mayor complejidad (Premium primero)
                     return sorted.sort((a, b) => b.riskFactor - a.riskFactor);
