@@ -157,6 +157,9 @@
         // Instancia de la base de datos
         let db;
         
+        // Estado persistente de acordeones expandidos
+        let expandedBrandIds = new Set();
+        
         // Sistema de Modal de Confirmación
         let confirmCallback = null;
 
@@ -386,17 +389,24 @@
                 }
                 
                 // Auto-expandir: si hay búsqueda activa, todos los acordeones deben abrirse
-                const shouldExpand = searchLower !== '';
+                // Si no hay búsqueda, usar el estado persistente
+                const shouldExpand = (brandId) => {
+                    if (searchLower !== '') {
+                        return true; // Durante búsqueda, expandir todo
+                    }
+                    return expandedBrandIds.has(brandId); // Sin búsqueda, usar estado persistente
+                };
                 
                 brandsList.innerHTML = filteredBrands.map((brand, index) => {
                     const accordionId = `accordion-${brand.id}`;
+                    const isExpanded = shouldExpand(brand.id);
                     
                     return `
                         <div class="bg-slate-700/50 rounded-lg border border-slate-600 overflow-hidden" data-brand-id="${brand.id}">
                             <!-- Cabecera del Acordeón -->
-                            <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70 transition" onclick="toggleAccordion('${accordionId}')">
+                            <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70 transition" onclick="toggleAccordion('${accordionId}', '${brand.id}')">
                                 <div class="flex items-center gap-3 flex-1">
-                                    <svg id="icon-${accordionId}" class="w-5 h-5 text-cyan-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="${shouldExpand ? 'transform: rotate(90deg);' : ''}">
+                                    <svg id="icon-${accordionId}" class="w-5 h-5 text-cyan-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="${isExpanded ? 'transform: rotate(90deg);' : ''}">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
                                     <h4 class="text-white font-bold text-lg">${brand.name}</h4>
@@ -414,7 +424,7 @@
                             </div>
                             
                             <!-- Contenido Expandible -->
-                            <div id="${accordionId}" class="accordion-content ${shouldExpand ? '' : 'max-h-0'} overflow-hidden transition-all duration-300" style="${shouldExpand ? 'max-height: 2000px;' : 'max-height: 0;'}">
+                            <div id="${accordionId}" class="accordion-content ${isExpanded ? '' : 'max-h-0'} overflow-hidden transition-all duration-300" style="${isExpanded ? 'max-height: 2000px;' : 'max-height: 0;'}">
                                 <div class="p-4 pt-0 border-t border-slate-600">
                                     ${brand.models.length > 0 ? `
                                         <div class="models-grid">
@@ -467,7 +477,7 @@
             }
         }
         
-        window.toggleAccordion = function(accordionId) {
+        window.toggleAccordion = function(accordionId, brandId) {
             const content = document.getElementById(accordionId);
             const icon = document.getElementById(`icon-${accordionId}`);
             
@@ -475,10 +485,12 @@
                 // Cerrar
                 content.style.maxHeight = '0px';
                 icon.style.transform = 'rotate(0deg)';
+                expandedBrandIds.delete(brandId); // Remover del estado
             } else {
                 // Abrir
                 content.style.maxHeight = content.scrollHeight + 'px';
                 icon.style.transform = 'rotate(90deg)';
+                expandedBrandIds.add(brandId); // Agregar al estado
             }
         }
 
