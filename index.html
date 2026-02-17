@@ -81,6 +81,14 @@
                             <option value="USD">USD</option>
                         </select>
                     </div>
+                    <div id="last-cost-hint" class="mt-2 text-sm text-gray-400 hidden">
+                        <span class="inline-flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Último costo registrado: <span id="last-cost-value" class="text-cyan-400 font-semibold"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -264,6 +272,7 @@
                 modelInput.placeholder = 'Primero selecciona una marca';
             }
             hasUnsavedChanges = true;
+            updateLastCostHint(); // Actualizar sugerencia de costo
             calculatePrice(); // Recalcular cuando cambie la marca
         });
 
@@ -271,10 +280,12 @@
             // Agregar listeners a todos los campos
             document.getElementById('calc-model').addEventListener('input', () => {
                 hasUnsavedChanges = true;
+                updateLastCostHint(); // Actualizar sugerencia de costo
                 calculatePrice();
             });
             document.getElementById('calc-service').addEventListener('input', () => {
                 hasUnsavedChanges = true;
+                updateLastCostHint(); // Actualizar sugerencia de costo
                 calculatePrice();
             });
             document.getElementById('calc-cost').addEventListener('input', () => {
@@ -377,6 +388,47 @@
             hasUnsavedChanges = false; // Marcar como guardado
             currentPage = 1; // Ir a la primera página al guardar nuevo
             showToast('¡Guardado en historial!');
+        }
+
+        // Buscar y mostrar el último costo registrado para una combinación marca+modelo+servicio
+        function updateLastCostHint() {
+            const brandValue = document.getElementById('calc-brand').value;
+            const modelValue = document.getElementById('calc-model').value;
+            const serviceValue = document.getElementById('calc-service').value;
+            const lastCostHint = document.getElementById('last-cost-hint');
+            const lastCostValue = document.getElementById('last-cost-value');
+
+            // Si no están todos los campos seleccionados, ocultar el hint
+            if (!brandValue || !modelValue || !serviceValue) {
+                lastCostHint.classList.add('hidden');
+                return;
+            }
+
+            // Buscar en el historial la última reparación con esta combinación
+            const lastRepair = appData.history.find(item => 
+                item.brand === brandValue && 
+                item.model === modelValue && 
+                item.service === serviceValue
+            );
+
+            if (lastRepair && lastRepair.cost) {
+                // Mostrar el último costo registrado
+                lastCostValue.textContent = `$${Math.round(lastRepair.cost).toLocaleString('es-AR')}`;
+                lastCostHint.classList.remove('hidden');
+                
+                // Si el campo de costo está vacío, pre-llenar con el último valor
+                const costInput = document.getElementById('calc-cost');
+                if (!costInput.value || costInput.value === '0') {
+                    costInput.value = Math.round(lastRepair.cost);
+                    // Como el historial guarda en ARS, asegurarse que el currency sea ARS
+                    document.getElementById('calc-currency').value = 'ARS';
+                    // Recalcular el precio con el nuevo valor
+                    calculatePrice();
+                }
+            } else {
+                // No hay historial para esta combinación
+                lastCostHint.classList.add('hidden');
+            }
         }
 
         // Interceptar navegación
