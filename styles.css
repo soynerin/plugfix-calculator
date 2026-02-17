@@ -1,33 +1,239 @@
+/* ============================================
+   DESIGN SYSTEM - VARIABLES Y TOKENS
+   ============================================ */
+:root {
+    /* SPACING SCALE (múltiplos de 4) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-20: 80px;
+    
+    /* BORDER RADIUS */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    
+    /* TOUCH TARGET (mínimo recomendado: 44-48px) */
+    --touch-target: 48px;
+    --touch-target-lg: 56px;
+    
+    /* FONT WEIGHTS */
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    
+    /* CONTAINER MAX WIDTHS */
+    --container-sm: 640px;
+    --container-md: 768px;
+    --container-lg: 1024px;
+    --container-xl: 1200px;
+    
+    /* Z-INDEX SCALE */
+    --z-base: 1;
+    --z-dropdown: 10;
+    --z-sticky: 50;
+    --z-fixed: 100;
+    --z-modal-backdrop: 999;
+    --z-modal: 1000;
+    --z-toast: 9999;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     min-height: 100vh;
-    padding-bottom: 65px; /* Ajustado para navegación más compacta */
+    padding-bottom: var(--space-20); /* 80px para bottom nav */
 }
 
+/* ============================================
+   LAYOUT CONTAINER SYSTEM
+   ============================================ */
+.page-container {
+    width: 100%;
+    margin: 0 auto;
+    padding-left: var(--space-4); /* 16px en móvil */
+    padding-right: var(--space-4);
+    padding-bottom: var(--space-20); /* 80px para bottom nav */
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) {
+    .page-container {
+        padding-left: var(--space-8); /* 32px */
+        padding-right: var(--space-8);
+        max-width: var(--container-md); /* 768px */
+    }
+}
+
+/* Desktop (> 1024px) */
+@media (min-width: 1024px) {
+    .page-container {
+        max-width: var(--container-xl); /* 1200px */
+        padding-left: var(--space-8);
+        padding-right: var(--space-8);
+    }
+}
+
+/* ============================================
+   GLASS CARD - COMPONENTE BASE
+   ============================================ */
 .glass-card {
     background: rgba(30, 41, 59, 0.7);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: var(--radius-lg);
 }
 
-.neon-text {
-    text-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+.card-container {
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4); /* 16px en móvil */
+    border: 1px solid rgba(71, 85, 105, 0.3);
 }
 
+@media (min-width: 768px) {
+    .card-container {
+        padding: var(--space-6); /* 24px en desktop */
+    }
+}
+
+/* ============================================
+   FLUID TYPOGRAPHY SYSTEM
+   ============================================ */
+/* Header Principal - H1 */
+h1, .text-h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem); /* 28px - 40px */
+    font-weight: var(--font-bold);
+    line-height: 1.2;
+}
+
+/* Section Header - H2 */
+h2, .text-h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem); /* 24px - 32px */
+    font-weight: var(--font-bold);
+    line-height: 1.3;
+}
+
+/* Subsection Header - H3 */
+h3, .text-h3 {
+    font-size: clamp(1.125rem, 3vw, 1.5rem); /* 18px - 24px */
+    font-weight: var(--font-semibold);
+    line-height: 1.4;
+}
+
+/* Body Text - Párrafo */
+p, .text-body {
+    font-size: 1rem; /* 16px - tamaño base legible */
+    line-height: 1.5;
+}
+
+/* Small Text */
+.text-small {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.4;
+}
+
+/* Extra Small Text */
+.text-xs {
+    font-size: 0.75rem; /* 12px */
+    line-height: 1.3;
+}
+
+/* ============================================
+   INPUT & SELECT COMPONENTS (Unified)
+   ============================================ */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+select,
+textarea,
+.input-base {
+    width: 100%;
+    height: var(--touch-target); /* 48px */
+    padding: 0 var(--space-4);
+    font-size: 1rem; /* 16px - evita zoom en iOS */
+    font-weight: var(--font-regular);
+    color: white;
+    background-color: rgb(51, 65, 85);
+    border: 1px solid rgb(71, 85, 105);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+/* Variant grande para pantallas de configuración */
+.input-lg {
+    height: var(--touch-target-lg); /* 56px */
+    font-size: 1.125rem; /* 18px */
+}
+
+/* Focus states */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+/* Disabled state */
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Textarea específico */
+textarea {
+    height: auto;
+    min-height: 100px;
+    padding: var(--space-3);
+    resize: vertical;
+}
+
+/* ============================================
+   BUTTON SYSTEM (Primary, Secondary, Danger)
+   ============================================ */
+.btn {
+    height: var(--touch-target); /* 48px - igual que inputs */
+    padding: 0 var(--space-6);
+    font-size: 1rem;
+    font-weight: var(--font-semibold);
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Primary Button */
 .btn-primary {
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
     box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
 }
 
 .btn-primary:hover {
     box-shadow: 0 0 30px rgba(6, 182, 212, 0.6);
+    transform: translateY(-1px);
 }
 
+/* Secondary Button */
 .btn-secondary {
     background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
     box-shadow: 0 0 15px rgba(100, 116, 139, 0.3);
-    transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
@@ -36,11 +242,61 @@ body {
     transform: translateY(-1px);
 }
 
+/* Danger Button */
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Button disabled state */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ============================================
+   SPACING UTILITIES (Vertical Rhythm)
+   ============================================ */
+.space-y-section {
+    margin-bottom: var(--space-8); /* 32px entre secciones */
+}
+
+.space-y-element {
+    margin-bottom: var(--space-4); /* 16px entre elementos */
+}
+
+.space-y-tight {
+    margin-bottom: var(--space-2); /* 8px espaciado apretado */
+}
+
+/* Gap entre título de página y primer elemento */
+.page-title {
+    margin-bottom: var(--space-6); /* 24px consistente */
+}
+
+/* ============================================
+   EFFECTS & UTILITIES
+   ============================================ */
+.neon-text {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
 .toast {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
+    top: var(--space-5);
+    right: var(--space-5);
+    z-index: var(--z-toast);
     animation: slideIn 0.3s ease-out;
 }
 
@@ -55,73 +311,12 @@ body {
     }
 }
 
-.tab-active {
-    background: rgba(6, 182, 212, 0.2);
-    border-top: 3px solid #06b6d4;
-}
-
-.tab-btn {
-    transition: all 0.2s ease;
-    text-decoration: none;
-}
-
-.tab-btn:hover {
-    background: rgba(6, 182, 212, 0.1);
-}
-
-input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: #06b6d4;
-    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-}
-
-/* Input Group styling */
-.input-group-wrapper:focus-within {
-    border-color: #06b6d4;
-    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-}
-
-/* Remove default number input spinner in Firefox */
-input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-}
-
-/* Remove default number input spinner in Chrome */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Datalist styling for autocomplete */
-input[list]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    cursor: pointer;
-}
-
-/* Delete buttons with better touch targets */
-.delete-btn, .delete-btn-brand, .delete-btn-model {
-    transition: all 0.2s;
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.delete-btn:hover, .delete-btn-brand:hover, .delete-btn-model:hover {
-    transform: scale(1.05);
-}
-
-/* Modal animations */
+/* ============================================
+   MODAL SYSTEM
+   ============================================ */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes scaleIn {
@@ -139,7 +334,111 @@ input[list]::-webkit-calendar-picker-indicator {
     animation: scaleIn 0.2s ease-out;
 }
 
-/* Smooth result appearance */
+/* ============================================
+   BOTTOM NAVIGATION
+   ============================================ */
+.tab-btn {
+    transition: all 0.2s ease;
+    text-decoration: none;
+    padding: var(--space-3) 0;
+}
+
+.tab-btn:hover {
+    background: rgba(6, 182, 212, 0.1);
+}
+
+.tab-active {
+    background: rgba(6, 182, 212, 0.2);
+    border-top: 3px solid #06b6d4;
+}
+
+/* ============================================
+   INPUT GROUP (para inputs con select anexo)
+   ============================================ */
+.input-group-wrapper {
+    display: flex;
+    align-items: stretch;
+    height: var(--touch-target);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid rgb(71, 85, 105);
+    background-color: rgb(51, 65, 85);
+    transition: all 0.2s ease;
+}
+
+.input-group-wrapper:focus-within {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.input-group-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    height: 100%;
+}
+
+.input-group-wrapper select {
+    border: none;
+    border-left: 1px solid rgb(71, 85, 105);
+    background-color: rgb(71, 85, 105);
+    height: 100%;
+    width: 80px;
+    flex-shrink: 0;
+    padding: 0 var(--space-2);
+    text-align: center;
+    font-size: 0.875rem; /* 14px - más compacto */
+}
+
+/* ============================================
+   REMOVE SPINNER FROM NUMBER INPUTS
+   ============================================ */
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* ============================================
+   DATALIST STYLING
+   ============================================ */
+input[list]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+/* ============================================
+   DELETE BUTTONS (Touch Target Optimization)
+   ============================================ */
+.delete-btn,
+.delete-btn-brand,
+.delete-btn-model,
+.service-delete-btn,
+.model-delete-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.delete-btn:hover,
+.delete-btn-brand:hover,
+.delete-btn-model:hover {
+    transform: scale(1.05);
+}
+
+/* ============================================
+   RESULT CONTAINER (Calculator)
+   ============================================ */
 #result-container {
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
@@ -150,17 +449,67 @@ input[list]::-webkit-calendar-picker-indicator {
     display: none;
 }
 
-/* History table styling */
+.result-price-display {
+    font-size: clamp(2.5rem, 12vw, 4.5rem);
+    line-height: 1.1;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    padding: 0 var(--space-2);
+}
+
+/* Result details grid - reduce padding on mobile */
+@media (max-width: 640px) {
+    .result-details-grid {
+        padding: var(--space-3) !important;
+        gap: var(--space-3) !important;
+    }
+    
+    .result-details-grid > div {
+        padding: var(--space-1);
+    }
+}
+
+/* Action buttons - Stack vertically on mobile */
+@media (max-width: 640px) {
+    .result-actions-container {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+    
+    .result-actions-container button {
+        width: 100%;
+        white-space: nowrap;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 375px) {
+    .result-price-display {
+        font-size: clamp(2rem, 10vw, 3rem);
+        margin-bottom: var(--space-4) !important;
+    }
+    
+    .result-details-grid {
+        padding: var(--space-2) !important;
+        gap: var(--space-2) !important;
+    }
+}
+
+/* ============================================
+   HISTORY & SERVICES TABLES
+   ============================================ */
 #history-table, #services-table {
     border-collapse: separate;
     border-spacing: 0;
 }
 
-#history-table thead th, #services-table thead th {
+#history-table thead th,
+#services-table thead th {
     position: sticky;
     top: 0;
     background: rgba(30, 41, 59, 0.95);
     backdrop-filter: blur(10px);
+    padding: var(--space-3) var(--space-2);
 }
 
 #history-table tbody tr:last-child,
@@ -168,17 +517,21 @@ input[list]::-webkit-calendar-picker-indicator {
     border-bottom: none;
 }
 
-/* Accordion styling */
+/* ============================================
+   ACCORDION STYLING
+   ============================================ */
 .accordion-content {
     transition: max-height 0.3s ease-in-out;
 }
 
-/* Models Grid - Responsive */
+/* ============================================
+   MODELS GRID (Database Page)
+   ============================================ */
 .models-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
 }
 
 /* Model Mini Card */
@@ -186,8 +539,8 @@ input[list]::-webkit-calendar-picker-indicator {
     position: relative;
     background: rgba(30, 41, 59, 0.6);
     border: 1px solid rgba(71, 85, 105, 0.5);
-    border-radius: 0.75rem;
-    padding: 1rem;
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
     transition: all 0.2s ease;
 }
 
@@ -198,15 +551,14 @@ input[list]::-webkit-calendar-picker-indicator {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Model Content */
 .model-content {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-base);
 }
 
 .model-name {
     color: white;
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     font-size: 0.95rem;
     line-height: 1.3;
     margin: 0;
@@ -216,9 +568,9 @@ input[list]::-webkit-calendar-picker-indicator {
 .model-badge {
     display: inline-block;
     font-size: 0.65rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.375rem;
+    font-weight: var(--font-semibold);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
@@ -246,11 +598,11 @@ input[list]::-webkit-calendar-picker-indicator {
 /* Model Delete Button */
 .model-delete-btn {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.375rem;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: var(--space-2);
     background: rgba(15, 23, 42, 0.8);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     color: rgb(148, 163, 184);
     opacity: 0;
     transition: all 0.2s ease;
@@ -279,11 +631,13 @@ input[list]::-webkit-calendar-picker-indicator {
     color: rgb(103, 232, 249);
 }
 
-/* Services Grid Layout */
+/* ============================================
+   SERVICES GRID (Database Page)
+   ============================================ */
 .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    gap: var(--space-4);
 }
 
 @media (max-width: 640px) {
@@ -297,8 +651,8 @@ input[list]::-webkit-calendar-picker-indicator {
     position: relative;
     background: rgba(51, 65, 85, 0.3);
     border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
     transition: all 0.3s ease;
     min-height: 90px;
 }
@@ -312,7 +666,7 @@ input[list]::-webkit-calendar-picker-indicator {
 
 .service-name {
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     color: rgb(241, 245, 249);
     line-height: 1.4;
     flex: 1;
@@ -343,14 +697,14 @@ input[list]::-webkit-calendar-picker-indicator {
 
 .hours-number {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: var(--font-bold);
     color: rgb(147, 197, 253);
     line-height: 1;
 }
 
 .hours-label {
     font-size: 0.625rem;
-    font-weight: 500;
+    font-weight: var(--font-medium);
     color: rgb(191, 219, 254);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -360,12 +714,12 @@ input[list]::-webkit-calendar-picker-indicator {
 /* Service Delete Button */
 .service-delete-btn {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.5rem;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: var(--space-2);
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     color: rgb(148, 163, 184);
     cursor: pointer;
     transition: all 0.25s ease;
@@ -386,65 +740,9 @@ input[list]::-webkit-calendar-picker-indicator {
     transform: scale(1.1);
 }
 
-/* Model chips in accordion */
-.delete-btn-model {
-    transition: all 0.2s;
-}
-
-/* Pagination buttons */
+/* ============================================
+   PAGINATION
+   ============================================ */
 #pagination-container button:hover:not(:disabled) {
     transform: translateY(-1px);
-}
-
-/* ============================================
-   MOBILE OPTIMIZATIONS - RESULT CARD
-   ============================================ */
-
-/* Price Display - Responsive sizing with clamp */
-.result-price-display {
-    font-size: clamp(2.5rem, 12vw, 4.5rem);
-    line-height: 1.1;
-    word-break: break-all;
-    overflow-wrap: anywhere;
-    padding: 0 0.5rem;
-}
-
-/* Details grid - Reduce padding on mobile */
-@media (max-width: 640px) {
-    .result-details-grid {
-        padding: 0.75rem !important;
-        gap: 0.75rem !important;
-    }
-    
-    .result-details-grid > div {
-        padding: 0.25rem;
-    }
-}
-
-/* Action buttons - Stack vertically on mobile */
-@media (max-width: 640px) {
-    .result-actions-container {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    
-    .result-actions-container button {
-        width: 100%;
-        font-size: 1rem;
-        padding: 0.875rem;
-        white-space: nowrap;
-    }
-}
-
-/* Extra small screens - Further optimizations */
-@media (max-width: 375px) {
-    .result-price-display {
-        font-size: clamp(2rem, 10vw, 3rem);
-        margin-bottom: 1rem !important;
-    }
-    
-    .result-details-grid {
-        padding: 0.5rem !important;
-        gap: 0.5rem !important;
-    }
 }
